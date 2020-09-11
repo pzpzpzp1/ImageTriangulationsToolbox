@@ -1,11 +1,11 @@
 clear all; close all;
 
 % input arg handling
-fname = 'images/BW.png';
-initialHorizontalSampling = 5;
+fname = 'images/toucan.png';
+initialHorizontalSampling = 3;
 degree = 0;
-dt0 = .000000001; % initial dt
-integral1DNsamples = 20;
+dt0 = .000001; % initial dt
+integral1DNsamples = 30;
 maxIters = 1000;
 
 % load image

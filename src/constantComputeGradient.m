@@ -21,6 +21,17 @@ function gradient = constantComputeGradient(img, mesh, integral1DNsamples)
     int_vn_dl = squeeze(sum(vndl, [1, 3]));
     int_fvn_dl = squeeze(sum(permute(vndl,[2 1 3 4]).*reshape(double(f_tri_edges),nT,integral1DNsamples,3, 1, 3),[2 3]));
     
+    % scratch space
+    figure; hold all;axis equal;
+    dAdv = permute(reshape(int_vn_dl,nT,2,3),[1 3 2]);
+    for i=1:nT
+        triv = mesh.X(mesh.T(i,:),:);
+        triv = triv*.5 + .5*mean(triv);
+        patch('vertices',triv,'faces',[1 2 3],'facecolor','green','facealpha',.2)
+        quiver(triv(:,1),triv(:,2),squeeze(dAdv(nT,:,1))',squeeze(dAdv(nT,:,2))','r');
+    end
+    
+    
     % Build gradient preparation mat. Still vectorized per triangle. Will be re-indexed to lie on vertices.
     % gradPrep: nT(tris per mesh), 3(verts per tri), 2(xy coords), 3(rgb channels)
     A = 2*mesh.triAreas.*repmat(reshape(int_f_dA,nT,1,3),1,6).*int_fvn_dl;
