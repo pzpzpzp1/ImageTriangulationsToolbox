@@ -2,7 +2,7 @@ clear all; close all;
 
 % input arg handling
 fname = 'images/toucan.png';
-initialHorizontalSampling = 3;
+initialHorizontalSampling = 100;
 degree = 0;
 dt0 = .000001; % initial dt
 integral1DNsamples = 30;
