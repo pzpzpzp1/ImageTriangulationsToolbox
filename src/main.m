@@ -1,11 +1,12 @@
 clear all; close all;
 
 % input arg handling
-fname = 'images/sunset.png';
-fname = 'images/toucan.png';
+fname = 'images/BW.png';
 initialHorizontalSampling = 5;
 degree = 0;
-integral1DNsamples = 10;
+dt0 = .000000001; % initial dt
+integral1DNsamples = 20;
+maxIters = 1000;
 
 % load image
 img = imread(fname);
@@ -23,12 +24,19 @@ approx = Approximator(degree);
 [energy, colors] = constantComputeEnergy(img, mesh, integral1DNsamples);
 
 % display initial state
-render(img,mesh,colors,approx);
+render(img,mesh,colors,approx,[]);
 
 %% simulation loop
-approx.computeGradient(img, mesh, integral1DNsamples);
-
-
+dt = dt0;
+for i=1:maxIters
+    mesh = MeshFromXT(X,T);
+    [energy, colors] = constantComputeEnergy(img, mesh, integral1DNsamples);
+    grad = approx.computeGradient(img, mesh, integral1DNsamples);
+    
+    render(img,mesh,colors,approx,grad);
+    
+    X = X - dt * grad;
+end
 
 
 

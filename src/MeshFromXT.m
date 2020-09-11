@@ -24,6 +24,17 @@ function mesh = MeshFromXT(X,T)
     mesh.triangleEdgeNormals(:,:,2) = tang123(:,:,1);
     mesh.triangleEdgeLengths = (vecnorm(tang123,2,3));
     
+    %% boundary handling. Specific to rectangular boundary mesh!
+    isBoundaryEdge = accumarray(mesh.triangles2edges(:),ones(3*size(T,1),1))==1;
+    edgetangs = X(mesh.edges(:,1),:)-X(mesh.edges(:,2),:);
+    edgetangs = edgetangs./vecnorm(edgetangs,2,2);
+    isXEdge = abs(edgetangs*[0 1]')<.000001;
+    isYEdge = abs(edgetangs*[1 0]')<.000001;
+    XvertInds = unique(mesh.edges(isBoundaryEdge & isXEdge,:));
+    YvertInds = unique(mesh.edges(isBoundaryEdge & isYEdge,:));
+    mesh.isXvert = false(size(X,1),1); mesh.isXvert(XvertInds) = true;
+    mesh.isYvert = false(size(X,1),1); mesh.isYvert(YvertInds) = true;
+    
     
     
 end
