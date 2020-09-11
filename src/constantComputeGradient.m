@@ -5,15 +5,20 @@ function gradient = constantComputeGradient(img, mesh, integral1DNsamples)
     % generate area samples of f
     ws = getBarycentricSamplingWeights(integral1DNsamples); n = size(ws,1); % number sample points
     samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T); % n x nT x 2
-    f = sampleImage(img, samplePoints); % n x nT x 3
+    f_triangle = sampleImage(img, samplePoints); % n x nT x 3
     
     % vn is (n, nT, 3, 6). 3 for number of edges. 6 for number of velocity values.
     vndl = sampleVdotN_dl(mesh, integral1DNsamples);
     
     % generate edge samples of f
-    % todo.
+    f_edges = zeros(nT,integral1DNsamples,3,2);
+    edgeSamplePoints = getEdgeSamplePoints(mesh,integral1DNsamples);
+    f_tri_edges = sampleImage(img, edgeSamplePoints);
     
-    int_f_dA = squeeze(sum(f,1)).*mesh.triAreas/n;
+    
+    
+    
+    int_f_dA = squeeze(sum(f_triangle,1)).*mesh.triAreas/n;
     int_vn_dl = squeeze(sum(vndl, [1, 3]));
     
     
