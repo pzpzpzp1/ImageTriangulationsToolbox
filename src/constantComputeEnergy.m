@@ -6,11 +6,7 @@ function [energy, colors] = constantComputeEnergy(img, mesh, integral1DNsamples)
     n = size(ws,1); 
    
     % perform sampling
-    xind = ceil(reshape(samplePoints(:,:,1),[],1));
-    yind = ceil(reshape(samplePoints(:,:,2),[],1));
-    linearInds = sub2ind(size(img,[1 2]), yind, xind);
-    flatimg = reshape(img,[],3);
-    sampleVals = reshape(flatimg(linearInds,:), n, nT, 3);
+    sampleVals = sampleImage(img, samplePoints);
     
     % compute mean per triangle
     colorsDouble = (squeeze(mean(sampleVals,1)));

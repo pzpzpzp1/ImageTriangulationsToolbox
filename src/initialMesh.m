@@ -17,6 +17,7 @@ function [X,T] = initialMesh(img, initialHorizontalSampling)
     TR = inds(1:end-1,2:end);
     BL = inds(2:end,1:end-1);
     BR = inds(2:end,2:end);
+    % clockwise oriented triangles
     T = [TL(:) TR(:) BL(:); BL(:) TR(:) BR(:)];
     X = [Xgrid(:) Ygrid(:)];
 

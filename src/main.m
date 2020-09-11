@@ -25,7 +25,8 @@ approx = Approximator(degree);
 % display initial state
 render(img,mesh,colors,approx);
 
-
+%% simulation loop
+approx.computeGradient(img, mesh, integral1DNsamples);
 
 
 

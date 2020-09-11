@@ -3,6 +3,7 @@ function approx = Approximator(degree)
     if degree == 0
         approx.render = @constantRender;
         approx.computeEnergy = @constantComputeEnergy;
+        approx.computeGradient = @constantComputeGradient;
     else
         error('Unknown approximator');
     end
