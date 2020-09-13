@@ -2,7 +2,7 @@ clear all; close all;
 
 % input arg handling
 fname = 'images/toucan.png';
-initialHorizontalSampling = 20;
+initialHorizontalSampling = 15;
 degree = 1;
 dt0 = 1e-6; % initial dt
 integral1DNsamples = 30;
@@ -31,8 +31,7 @@ render(img,mesh,colors,approx,[]);
 dt = dt0;
 for i=1:maxIters
     mesh = MeshFromXT(X,T);
-    [energy, colors] = approx.computeEnergy(img, mesh, integral1DNsamples);
-    grad = approx.computeGradient(img, mesh, integral1DNsamples);
+    [energy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples);
     
     % render(img,mesh,colors,approx,grad);
     render(img,mesh,colors,approx,[]);
