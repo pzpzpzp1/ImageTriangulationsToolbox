@@ -7,7 +7,9 @@ function ws = getBarycentricSamplingWeights(n)
         v = linspace(0,1,n);
         [U,V] = ndgrid(u,v);
         W = 1-U-V;
-        keep = find(W>=0);
+        % n would need to be 1e6 for this to become floating point imprecise.
+        keep = find(W>=-1e-6);
+        assert(numel(keep)==n*(n+1)/2); % another thresholding sanity check
         cachedWs{n} = [U(keep) V(keep) W(keep)];
     end
     ws = cachedWs{n};
