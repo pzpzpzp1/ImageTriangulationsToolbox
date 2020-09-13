@@ -1,8 +1,4 @@
-function [X,T] = initialMesh(img, initialHorizontalSampling)
-
-    width = size(img,2);
-    height = size(img,1);
-
+function [X,T] = initialGridMesh(width, height, initialHorizontalSampling)
     xvals = linspace(0,width,initialHorizontalSampling);
     eps = .00001;
     xvals(1) = eps;

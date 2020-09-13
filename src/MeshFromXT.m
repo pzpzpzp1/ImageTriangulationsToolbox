@@ -7,6 +7,7 @@ function mesh = MeshFromXT(X,T)
     v1 = X(T(:,1),:);  v2 = X(T(:,2),:);  v3 = X(T(:,3),:);
     e12 = [v1-v2]; e12(1,3) = 0; e23 = [v2-v3]; e23(1,3) = 0;
     mesh.triAreas = (cross(e12,e23)/2)*[0 0 1]';
+    assert(all(mesh.triAreas>0));
     
     allEdges = [T(:,[1 2]); T(:,[2 3]); T(:,[3 1])];
     [mesh.edges, ia, ic] = unique(sort(allEdges,2),'rows');
@@ -49,6 +50,22 @@ function mesh = MeshFromXT(X,T)
     YvertInds = unique(mesh.edges(isBoundaryEdge & isYEdge,:));
     mesh.isXvert = false(size(X,1),1); mesh.isXvert(XvertInds) = true;
     mesh.isYvert = false(size(X,1),1); mesh.isYvert(YvertInds) = true;
+    
+    %% compute dA_dt
+    TX = permute(reshape(X(T',:),3,[],2),[2 3 1]);
+    e123 = TX - circshift(TX,-1,3);
+    e312 = circshift(e123,-1,3); % get part of e123 orthogonal to e312
+    altitudes = e123 - sum(e123.*e312,2)./vecnorm(e312,2,2).^2.*e312;
+    altitudes = altitudes./vecnorm(altitudes,2,2);
+    mesh.dAdt = vecnorm(e312,2,2).*altitudes/2;
+    
+    %{
+    dirs = squeeze(altitudes(end,:,:))';
+    XT = X(T(end,:),:);
+    figure; hold all; axis equal;
+    plot(XT(:,1), XT(:,2));
+    quiver(XT(:,1), XT(:,2), dirs(:,1), dirs(:,2));
+    %}
     
     
     
