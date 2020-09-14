@@ -1,4 +1,5 @@
-function [energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1DNsamples)
+function [energy, colors, gradient, extra] = constantComputeEnergy(img, mesh, integral1DNsamples)
+    extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
     ws = getBarycentricSamplingWeights(integral1DNsamples);
@@ -27,7 +28,7 @@ function [energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1
         samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T); % n x nT x 2
         f_triangle = sampleImage(img, samplePoints); % n x nT x 3
 
-        % vn is (n, nT, 3, 6). 3 for number of edges. 6 for number of velocity values.
+        % vn is (nT, n, 3, 6). 3 for number of edges. 6 for number of velocity values.
         vndl = sampleVdotN_dl(mesh, integral1DNsamples);
 
         % generate edge samples of f
@@ -38,8 +39,8 @@ function [energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1
         int_f_dA = squeeze(sum(f_triangle,1)).*mesh.triAreas/n;
         int_f_dA2 = int_f_dA.^2;
         % int_vn_dl = squeeze(sum(vndl, [1, 3]));
-        int_vn_dl = reshape(mesh.dAdt,[],6);
-        int_fvn_dl = squeeze(sum(permute(vndl,[2 1 3 4]).*reshape(double(f_tri_edges),nT,integral1DNsamples,3, 1, 3),[2 3]));
+        int_vn_dl = mesh.dAdt;
+        int_fvn_dl = squeeze(sum(vndl.*reshape(double(f_tri_edges),nT,integral1DNsamples,3, 1, 3),[2 3]));
 
         % Build gradient preparation mat. Still vectorized per triangle. Will be re-indexed to lie on vertices.
         % gradPrep: nT(tris per mesh), 3(verts per tri), 2(xy coords), 3(rgb channels)

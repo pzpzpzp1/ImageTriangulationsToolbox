@@ -1,3 +1,4 @@
+% edgeSamplePoints: [nT, n, 3(edges), 2(xy)]
 function edgeSamplePoints = getEdgeSamplePoints(mesh, n)
     X = mesh.X; T=mesh.T; nT=size(T,1);
     

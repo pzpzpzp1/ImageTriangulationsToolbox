@@ -50,6 +50,7 @@ function mesh = MeshFromXT(X,T)
     YvertInds = unique(mesh.edges(isBoundaryEdge & isYEdge,:));
     mesh.isXvert = false(size(X,1),1); mesh.isXvert(XvertInds) = true;
     mesh.isYvert = false(size(X,1),1); mesh.isYvert(YvertInds) = true;
+    mesh.isInterior = ~mesh.isXvert & ~mesh.isYvert;
     
     %% compute dA_dt
     TX = permute(reshape(X(T',:),3,[],2),[2 3 1]);
@@ -57,7 +58,7 @@ function mesh = MeshFromXT(X,T)
     e312 = circshift(e123,-1,3); % get part of e123 orthogonal to e312
     altitudes = e123 - sum(e123.*e312,2)./vecnorm(e312,2,2).^2.*e312;
     altitudes = altitudes./vecnorm(altitudes,2,2);
-    mesh.dAdt = vecnorm(e312,2,2).*altitudes/2;
+    mesh.dAdt = reshape(vecnorm(e312,2,2).*altitudes/2,[],6); %nT, 6=(2(xy) x 3(verts)).
     
     %{
     dirs = squeeze(altitudes(end,:,:))';

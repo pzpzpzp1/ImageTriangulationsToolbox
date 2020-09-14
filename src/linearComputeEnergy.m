@@ -1,83 +1,155 @@
 % colors is (3 vertices) (3 rgb) (nT triangles)
-function [energy, colors, gradient] = linearComputeEnergy(img, mesh, integral1DNsamples)
-    
+function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
-    ws = getBarycentricSamplingWeights(integral1DNsamples);
+    ws = getBarycentricSamplingWeights(n1D); n = size(ws,1); % number sample points
     samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T);
     n = size(ws,1); 
-   
-    % perform sampling
-    sampleVals = double(sampleImage(img, samplePoints)); % n, nT, 3
     
+    % perform sampling
+    f_triangle = permute(double(sampleImage(img, samplePoints)),[2 1 3]); % nT, n, 3
+    
+    %{    
+        points = reshape(samplePoints,[],2);
+        cols = reshape(permute(f_triangle,[2 1 3]),[],3);
+        figure; hold all; axis equal; 
+        %image(img);
+        scatter(points(:,1),points(:,2),500,cols/256,'filled')
+        scatter(points(:,1),points(:,2),'k.')
+    %}  
+    
+    % f_triangle: nT n 3
+    % ws:            n 3
     % compute Lj: nT, 3, 3 
     % triangles, rgb colors, basis funcs
-    Lj = squeeze(sum(sampleVals .* reshape(ws,n,1,1,3),1)).*mesh.triAreas/n;
+    Lj = squeeze(sum(reshape(f_triangle,nT,n,1,3) .* reshape(ws,1,n,3,1),2)).*mesh.triAreas/n;
     
     [K, Ki] = loadMassMatrix(1);
-    Ki_T = repmat(reshape(Ki,1,3,3),nT,1,1);
-    colors = multiprod(permute(Ki_T./(2*mesh.triAreas),[2 3 1]), permute(Lj,[3 2 1]));
+    % colors: nT vert rgb
+    % Ki     [1   3  3  1 ]
+    % Lj_1 = [nT  1  3  3 ]
+    % A =    [nT          ]
+    extra.colors_fem = squeeze(sum(reshape(Ki,1, 3, 3, 1).*reshape(Lj,nT,1,3,3)./(2*mesh.triAreas), 3));
+    
+    %{
+%     figure; hold all; axis equal; 
+%     image(img);
+%     renderMeshEdges(mesh);
+%     for i=1:nT
+%         verts = X(T(i,:),:);
+%         cent = mean(verts);
+%         pull = .95;
+%         for j=1:3
+%             pt = verts(j,:);
+%             col = double(squeeze(colors(i,j,:))');
+%             plotpt = pull*pt+(1-pull)*cent;
+%             scatter(plotpt(1),plotpt(2),25,col/256,'filled');
+% %             scatter(plotpt(1),plotpt(2),30,'c');
+%         end
+%     end
+    %}
+    
+    % use least squares to get color per triangle instead of fem method. fem method doesn't work as well because we use inverse mass matrix which assumes a good numerical integral over the image. turns out uniform samples for integrating on triangles isn't that good.
+    
+    A1 = zeros(n,nT,3);    
+    A1(:,:,1:2) = samplePoints; A1(:,:,3)=1;
+    AtA = squeeze(sum(A1.*reshape(A1,n,nT,1,3),1));
+    AtAi = multinv(permute(AtA,[2 3 1]));
+    rhsR = squeeze(sum(f_triangle(:,:,1) .* permute(A1,[2 1 3]),2));
+    rhsG = squeeze(sum(f_triangle(:,:,2) .* permute(A1,[2 1 3]),2));
+    rhsB = squeeze(sum(f_triangle(:,:,3) .* permute(A1,[2 1 3]),2));
+    Rcoeffs = squeeze(sum(AtAi .* reshape(rhsR',1,3,nT),2))';
+    Gcoeffs = squeeze(sum(AtAi .* reshape(rhsG',1,3,nT),2))';
+    Bcoeffs = squeeze(sum(AtAi .* reshape(rhsB',1,3,nT),2))';
+    TX = reshape(X(T(:),:),nT,3,2);
+    TX1 = TX; TX1(:,:,3)=1;
+    rvals = sum(TX1.*reshape(Rcoeffs,nT,1,3),3);
+    gvals = sum(TX1.*reshape(Gcoeffs,nT,1,3),3);
+    bvals = sum(TX1.*reshape(Bcoeffs,nT,1,3),3);
+    colors(:,:,1) = rvals;
+    colors(:,:,2) = gvals;
+    colors(:,:,3) = bvals;
     
     % compute actual energy.
-    linearColor = permute(reshape(ws * reshape(colors,3,[]), n, 3, nT),[1 3 2]);
-    energyPerColorChannel = mesh.triAreas'*squeeze(vecnorm(linearColor - sampleVals,2,1).^2)/n;
+    % ws:         [   n  3  ]
+    % colors:     [nT    3 3]
+    linearColor = squeeze(sum(reshape(ws,1,n,3,1).*reshape(colors,nT,1,3,3),3));
+    energyPerColorChannel = mesh.triAreas'*squeeze(vecnorm(linearColor - f_triangle,2,2).^2)/n;
     energy = sum(energyPerColorChannel);
     
     % todo: optimize. should be slightly redundant with above.
     if nargout >= 3
         %% compute gradient
-        X = mesh.X; T = mesh.T; edges = mesh.edges;
-        nX = size(X,1); nT = size(T,1); nE = size(edges,1);
-
-        % generate area samples of f
-        ws = getBarycentricSamplingWeights(integral1DNsamples); n = size(ws,1); % number sample points
-        samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T); % n x nT x 2
-        f_triangle = double(sampleImage(img, samplePoints)); % n x nT x 3
-
-        % int_T_fphi_dA: (nT) (3 rgb) (3 phi_j)
-        int_T_fphi_dA = squeeze(sum(f_triangle.*reshape(ws,n,1,1,3),1));
-
-        % int_vn_dl: (nT) (6 = (2 xy) x (3 vertices))
-        int_vn_dl = reshape(mesh.dAdt,[],6);
-
-        % constantGradients: triangles, xy, phi
+        
+        % constantGradients: [nT 6=(2(xy) 3(verts))]
         constantGradients = mesh.dAdt./mesh.triAreas;
+        
+        % constantGradients: [nT             6 = (2(xy) 3(verts)) ]
+        % ws:                [    n  3(phi)                       ]
         % scratch: dphi_dt(:,:,phind,xyind,vertind) = constantGradients(:,xyind,phind).*ws(:,vertind);
-        % dphi_dt: triangles, samples, phi, xy, verts
-        dphi_dt = reshape(constantGradients,nT,1,1,2,3).*reshape(ws,1,n,3);
+        % dphi_dt: triangles, samples, phi, v
+        dphi_dt = reshape(constantGradients,nT,1,1,6).*reshape(ws,1,n,3);
 
-        % vn is (n, nT, 3, 6). 3 for number of edges. 6 for number of velocity values.
-        vndl = sampleVdotN_dl(mesh, integral1DNsamples);
+        % vn is (nT, n, 3, 6). 3 for number of edges. 6 for number of velocity values.
+        vndl = sampleVdotN_dl(mesh, n1D);
 
-        % generate edge samples of f
-        edgeSamplePoints = getEdgeSamplePoints(mesh,integral1DNsamples);
-        f_tri_edges = sampleImage(img, edgeSamplePoints);
+        % generate edge samples of f.
+        % edgeSamplePoints: [nT, n, 3(edges), 2(xy)]
+        edgeSamplePoints = getEdgeSamplePoints(mesh,n1D);
+        % f_tri_edges:      [nT, n, 3(edges), 3(rgb)]
+        f_tri_edges = double(sampleImage(img, edgeSamplePoints));
 
         % generate edge samples of phi
         % phi_edges_oneTri: (samples per edge) (3 edges) (3 phis)
-        edgeWs = linspace(0,1,integral1DNsamples);
-        phi_edges_oneTri = zeros(integral1DNsamples,3,3);
+        edgeWs = linspace(0,1,n1D);
+        phi_edges_oneTri = zeros(n1D,3,3);
         phi_edges_oneTri(:,1,1) = fliplr(edgeWs);
         phi_edges_oneTri(:,2,2) = fliplr(edgeWs);
         phi_edges_oneTri(:,3,3) = fliplr(edgeWs);
         phi_edges_oneTri(:,3,1) = edgeWs;
         phi_edges_oneTri(:,1,2) = edgeWs;
         phi_edges_oneTri(:,2,3) = edgeWs;
-        phi_edges = repmat(reshape(phi_edges_oneTri,1,integral1DNsamples,3,3),nT,1,1,1,1);
-
+        
+        % phi_edges_oneTri: [      n1D    3(edges)                 3(phis)]
+        % vndl:             [nT    n1D    3(edges)   6(v)                 ]
+        % f_tri_edges:     [nT    n1D    3(edges)          3(rgb)        ]
         % int_fvn_dl: (nT) (v motions) (rgb) (phi)
-        int_fvn_dl = squeeze(sum(reshape(phi_edges,nT,integral1DNsamples,3,1,1,3).*permute(vndl,[2 1 3 4]).*reshape(double(f_tri_edges),nT,integral1DNsamples,3, 1, 3),[2 3]));
-
-        % Build gradient preparation mat. Still vectorized per triangle. Will be re-indexed to lie on vertices.
-        % todo: build gradprep
-        [~, colors] = linearComputeEnergy(img, mesh, integral1DNsamples);
-        [K, Ki] = loadMassMatrix(1);
-        dcdt = Ki/2 * (dLdt/mesh.triAreas - Lj.*mesh.dAdt/mesh.triAreas.^2)
-        % todo: build gradprep
-
-
-
+        int_fvnphi_dl = squeeze(sum(reshape(phi_edges_oneTri,1,n1D,3,1,1,3).*vndl.*reshape(f_tri_edges,nT,n1D,3,1,3,1),[2 3]));
+        
+        % build: dLdt
+        % f_triangle_1:  [nT n   3(rgb)         ]
+        % dphi_dt_1:     [nT n 6         3(phi) ]
+        % int_fvnphi_dl: [nT   6 3(rgb)  3(phi) ]
+        % dLdt:          [nT   6 3(rgb)  3(phi) ]
+        dphi_dt_1 = reshape(permute(dphi_dt,[1 2 4 3]),nT,n,6,1,3);
+        f_triangle_1 = reshape(f_triangle,nT,n,1,3,1);
+        dLdt = squeeze(sum(dphi_dt_1.*f_triangle_1.*(mesh.triAreas/n),2)) + int_fvnphi_dl;
+        
+        % build: dcdt
+        % dLdt:          [nT        6(v)          3(rgb)    3(phi)    ]
+        % mesh.triAreas: [nT]
+        % Lj:            [nT                      3(rgb)    3(phi)    ]
+        % mesh.dAdt:     [nT        2(xy) 3(vert)                     ]
+        % Ki:            [3(phi_col)                        3(phi_row)]
+        % dcdt pseudocode = Ki/2 * (dLdt/mesh.triAreas - Lj.*mesh.dAdt/mesh.triAreas.^2);
+        % dcdt:          [nT        6             3(rgb)    3(phi)    ]
+        dcdt_part1 = reshape(dLdt,[nT,6,3,3])./mesh.triAreas - reshape(Lj,[nT,1,3,3]).*mesh.dAdt./mesh.triAreas.^2;
+        dcdt = reshape(reshape(dcdt_part1,[],3)*Ki'/2,nT,6,3,3);
+        
+        % pseudocode 
+        % dcdt:          [nT        6             3(rgb)    3(phi)]
+        % Lj:            [nT                      3(rgb)    3(phi)]
+        % dLdt:          [nT        6             3(rgb)    3(phi)]
+        % colors_1:      [nT                      3(rgb)    3(phi)]
+        % gradprep:      [nT        6             3(rgb)]
+        colors_1 = permute(colors,[1 3 2]);
+        % gradPrep_1: [nT 3(verts) 6=(2(xy) x 3(rgb))]
+        gradPrep_1 = sum(dcdt.*reshape(Lj,nT,1,3,3) + reshape(colors_1,nT,1,3,3).*dLdt,4);
+        % gradPrep: [nT 3(verts) 6=(2(xy) x 3(rgb))]
+        gradPrep = -reshape(permute(reshape(gradPrep_1,nT,2,3,3),[1 3 2 4]),nT,3,6); % bundle xy with rgb.
+        
         % accumulate per triangle gradient values to vertices.
+        nX = size(X,1); 
         vertGrad = zeros(nX,6);
         for i=1:6
             vertGrad(:,i) = accumarray(mesh.T(:), reshape(gradPrep(:,:,i),[],1));

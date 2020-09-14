@@ -14,9 +14,8 @@ function vn_dl  = sampleVdotN_dl(mesh, n)
     % size(vsamples): n  1 3 6 2
     % size(TEN):      1 nT 3 1 2
     
-    vn = sum(reshape(vsamples,n,1,3,6,2).*reshape(TEN,1,nT,3,1,2),5);
+    vn = sum(reshape(vsamples,1,n,3,6,2).*reshape(TEN,nT,1,3,1,2),5);
     % size(vn): n nT 3 6
     
-    vn_dl = vn .* reshape(mesh.triangleEdgeLengths,1,nT,3)/n;
-    
+    vn_dl = vn .* reshape(mesh.triangleEdgeLengths,nT,1,3)/n;
 end
