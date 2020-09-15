@@ -1,19 +1,21 @@
 clear all; close all;
 
 % input arg handling
-fname = 'images/apple.png';
+fname = 'images/appleGray.PNG';
+% fname = 'images/apple.png';
 % fname = 'images/sunset.png';
+% fname = 'images/circle.png';
 % fname = 'images/BW.png';
 % fname = 'images/s2by3.PNG';
 % fname = 'images/toucan.png';
 % fname = 'images/gradientVerticalGray.png';
 % fname = 'images/gradientDiagGray.png';
 % fname = 'images/gradientHorizontalGray.png';
-initialHorizontalSampling = 20;
+initialHorizontalSampling = 4;
 degree = 1;
 % dt0 = 1e-6; % initial dt
 dt0 = 5e-9; % initial dt
-integral1DNsamples = 15;
+integral1DNsamples = 50;
 % integral1DNsamples = 500;
 maxIters = 1000;
 showgrad = 1;
@@ -21,6 +23,7 @@ forceGray = 1;
 
 % load image
 img = imread(fname); 
+% img = fliplr(img); img = flipud(img);
 width = size(img,2);
 height = size(img,1);
 
@@ -32,13 +35,13 @@ if forceGray
 end
 
 % initialize triangulation
-% [X,T] = initialGridMesh(width, height, initialHorizontalSampling, 1);
-[X,T] = initialHexLatticeMesh(width, height, initialHorizontalSampling);
+[X,T] = initialGridMesh(width, height, initialHorizontalSampling, 0);
+% [X,T] = initialHexLatticeMesh(width, height, initialHorizontalSampling);
 mesh = MeshFromXT(X,T);
 
 % perturb interior vertices for more randomness
-X(mesh.isInterior,:) = X(mesh.isInterior,:) + randn(size(X(mesh.isInterior,:)))*width/(20*initialHorizontalSampling);
-mesh = MeshFromXT(X,T);
+% X(mesh.isInterior,:) = X(mesh.isInterior,:) + randn(size(X(mesh.isInterior,:)))*width/(20*initialHorizontalSampling);
+% mesh = MeshFromXT(X,T);
 
 % initialize approximator
 approx = Approximator(degree);

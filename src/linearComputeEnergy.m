@@ -2,7 +2,7 @@
 function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
-    ws = getBarycentricSamplingWeights(n1D); n = size(ws,1); % number sample points
+    ws = getBarycentricSamplingWeights(n1D); 
     samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T);
     n = size(ws,1); 
     
@@ -167,7 +167,7 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
         colors_1 = permute(colors,[1 3 2]);
         % gradPrep_1: [nT 6=(2(xy) x 3(verts)) 3(rgb)]
         gradPrep_1 = sum(dcdt.*reshape(permute(Lj,[1,3,2]),nT,1,3,3) + reshape(colors_1,nT,1,3,3).*dLdt,4);
-        gradPrep_1 = int_f2vn_dl;
+%         gradPrep_1 = int_f2vn_dl;
         % gradPrep: [nT 3(verts) 6=(2(xy) x 3(rgb))]
         gradPrep = -reshape(permute(reshape(gradPrep_1,nT,2,3,3),[1 3 2 4]),nT,3,6); % bundle xy with rgb.
         
