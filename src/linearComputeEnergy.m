@@ -94,7 +94,7 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
         dphi_dt_1 = reshape(permute(dphi_dt,[1 2 4 3]),nT,n,6,1,3);
         f_triangle_1 = reshape(f_triangle,nT,n,1,3,1);
         % Not entirely sure why this area component needs to have a negative sign. Might have forgotten a sign earlier.
-        area_component = -squeeze(sum(dphi_dt_1.*f_triangle_1.*dA,2)); 
+        area_component = -squeeze(sum(dphi_dt_1.*f_triangle_1,2)).*dA; 
         dLdt = area_component + int_fvnphi_dl;
         
         % build: dcdt = Ki/2 * (dLdt/mesh.triAreas - Lj.*mesh.dAdt/mesh.triAreas.^2);
