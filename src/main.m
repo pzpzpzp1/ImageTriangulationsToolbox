@@ -3,11 +3,11 @@ clear all; close all;
 %% input args
 % fname = 'images/appleGray.PNG';
 % fname = 'images/apple.png';
-% fname = 'images/sunset.png';
+fname = 'images/sunset.png';
 % fname = 'images/circle.png';
 % fname = 'images/BW.png';
 % fname = 'images/s2by3.PNG';
-fname = 'images/toucan.png';
+% fname = 'images/toucan.png';
 % fname = 'images/gradientVerticalGray.png';
 % fname = 'images/gradientDiagGray.png';
 % fname = 'images/gradientHorizontalGray.png';
@@ -53,6 +53,7 @@ approx = Approximator(degree);
 render(img,mesh,colors,approx,[]);
 
 %% simulation loop
+profile on;
 try
     dt = dt0;
     energy = zeros(maxIters,1);
@@ -78,7 +79,7 @@ end
 render(img,mesh,colors,approx,[]);
 figure; plot(energy(1:i)); title('energy');
 figure; plot(gradnorms(1:i)); title('gradnorm');
-
+profile viewer;
 
 
 

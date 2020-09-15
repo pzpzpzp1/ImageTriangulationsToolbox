@@ -2,9 +2,7 @@ function f1 = render(img, mesh, colors, approx, grad)
     X = mesh.X; T = mesh.T;
     f1 = gcf; f1.Name = 'image triangulations interface';
     clf; set(gcf,'color','w');
-    
     f1.Visible = 'off';
-    % figure('name','image triangulations interface','Visible','off');
     subplot_er(1,2,1); set(gca, 'YDir','reverse');
     image(img); hold all; axis equal; axis off;
     renderMeshEdges(mesh,[.5 .5]);

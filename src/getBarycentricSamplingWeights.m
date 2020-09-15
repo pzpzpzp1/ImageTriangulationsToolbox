@@ -1,6 +1,6 @@
+
 function ws = getBarycentricSamplingWeights(n)
-    assert(n >= 3 && n <= 5000) % some reasonable bounds
-    
+    assert(n >= 3);
     persistent cachedWs;
     if isempty(cachedWs) || n > numel(cachedWs) || numel(cachedWs{n})==0
         u = linspace(0,1,n);
@@ -11,11 +11,11 @@ function ws = getBarycentricSamplingWeights(n)
         keep = find(W>=-1e-6);
         assert(numel(keep)==n*(n+1)/2); % another thresholding sanity check
         cachedWs{n} = [U(keep) V(keep) W(keep)];
-        
     end
     ws = cachedWs{n};
-    
-    %% sanity check
+end
+
+ %% sanity check visualization
     %{
     [K, Ki] = loadMassMatrix(1);
     X = [0 0;1 0;0 1;]; T=[1 2 3];
@@ -33,5 +33,3 @@ function ws = getBarycentricSamplingWeights(n)
     Ksamp = ws'*ws/(2*size(ws,1));
     norm(Ksamp - K)
     %}  
-    
-end
