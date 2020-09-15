@@ -1,30 +1,44 @@
 clear all; close all;
 
 % input arg handling
-fname = 'images/sunset.png';
+fname = 'images/apple.png';
+% fname = 'images/sunset.png';
+% fname = 'images/BW.png';
+% fname = 'images/s2by3.PNG';
+% fname = 'images/toucan.png';
 % fname = 'images/gradientVerticalGray.png';
+% fname = 'images/gradientDiagGray.png';
+% fname = 'images/gradientHorizontalGray.png';
 initialHorizontalSampling = 20;
 degree = 1;
 % dt0 = 1e-6; % initial dt
-dt0 = 5e-8; % initial dt
-integral1DNsamples = 20;
+dt0 = 5e-9; % initial dt
+integral1DNsamples = 15;
 % integral1DNsamples = 500;
 maxIters = 1000;
 showgrad = 1;
+forceGray = 1;
 
 % load image
-img = imread(fname);
+img = imread(fname); 
 width = size(img,2);
 height = size(img,1);
 
+if forceGray
+    greyImg = rgb2gray(img);
+    img(:,:,1) = greyImg;
+    img(:,:,2) = greyImg;
+    img(:,:,3) = greyImg;
+end
+
 % initialize triangulation
-% [X,T] = initialGridMesh(width, height, initialHorizontalSampling);
+% [X,T] = initialGridMesh(width, height, initialHorizontalSampling, 1);
 [X,T] = initialHexLatticeMesh(width, height, initialHorizontalSampling);
 mesh = MeshFromXT(X,T);
 
 % perturb interior vertices for more randomness
-% X(mesh.isInterior,:) = X(mesh.isInterior,:) + randn(size(X(mesh.isInterior,:)))*width/(20*initialHorizontalSampling);
-% mesh = MeshFromXT(X,T);
+X(mesh.isInterior,:) = X(mesh.isInterior,:) + randn(size(X(mesh.isInterior,:)))*width/(20*initialHorizontalSampling);
+mesh = MeshFromXT(X,T);
 
 % initialize approximator
 approx = Approximator(degree);
@@ -36,23 +50,31 @@ approx = Approximator(degree);
 render(img,mesh,colors,approx,[]);
 
 %% simulation loop
-dt = dt0;
-energy = zeros(maxIters,1);
-for i=1:maxIters
-    mesh = MeshFromXT(X,T);
-    [energy(i), colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples);
-    
-    if showgrad;
-        render(img,mesh,colors,approx,grad);
-    else
-        render(img,mesh,colors,approx,[]);
+try
+    dt = dt0;
+    energy = zeros(maxIters,1);
+    gradnorms = zeros(maxIters,1);
+    for i=1:maxIters
+        mesh = MeshFromXT(X,T);
+        [energy(i), colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples);
+        gradnorms(i) = norm(grad);
+        
+        if showgrad;
+            render(img,mesh,colors,approx,grad);
+        else
+            render(img,mesh,colors,approx,[]);
+        end
+
+        dt = 1/max(vecnorm(grad,2,2)); % always at most 1 pixel distance traveled per vertex.
+        if norm(grad)==0; break; end;
+        X = X - dt * grad;
     end
-    
-    dt = 1/max(vecnorm(grad,2,2)); % always at most 1 pixel distance traveled per vertex.
-    X = X - dt * grad;
+catch ex
+    erStack = ex.stack;
 end
 render(img,mesh,colors,approx,[]);
-figure; plot(energy)
+figure; plot(energy(1:i)); title('energy');
+figure; plot(gradnorms(1:i)); title('gradnorm');
 
 
 

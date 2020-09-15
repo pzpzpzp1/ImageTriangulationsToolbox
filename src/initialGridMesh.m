@@ -1,4 +1,4 @@
-function [X,T] = initialGridMesh(width, height, initialHorizontalSampling)
+function [X,T] = initialGridMesh(width, height, initialHorizontalSampling, randslant)
     xvals = linspace(0,width,initialHorizontalSampling);
     eps = .00001;
     xvals(1) = eps;
@@ -13,8 +13,15 @@ function [X,T] = initialGridMesh(width, height, initialHorizontalSampling)
     TR = inds(1:end-1,2:end);
     BL = inds(2:end,1:end-1);
     BR = inds(2:end,2:end);
+    slantDirection = rand(size(BR))>.5;
     % clockwise oriented triangles
-    T = [TL(:) TR(:) BL(:); BL(:) TR(:) BR(:)];
+    if randslant
+        T1 = [TL(slantDirection) TR(slantDirection) BL(slantDirection); BL(slantDirection) TR(slantDirection) BR(slantDirection)];
+        T2 = [TL(~slantDirection) BR(~slantDirection) BL(~slantDirection); BR(~slantDirection) TL(~slantDirection) TR(~slantDirection)];
+        T = [T1;T2];
+    else
+        T = [TL(:) TR(:) BL(:); BL(:) TR(:) BR(:)];
+    end
     X = [Xgrid(:) Ygrid(:)];
 
 end

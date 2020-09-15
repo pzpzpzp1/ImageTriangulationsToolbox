@@ -7,7 +7,7 @@ function f1 = render(img, mesh, colors, approx, grad)
     % figure('name','image triangulations interface','Visible','off');
     subplot_er(1,2,1); set(gca, 'YDir','reverse');
     image(img); hold all; axis equal; axis off;
-    renderMeshEdges(mesh);
+    renderMeshEdges(mesh,[.5 .5]);
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
     
     subplot_er(1,2,2);
