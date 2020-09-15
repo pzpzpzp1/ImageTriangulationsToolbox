@@ -9,15 +9,6 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     % perform sampling
     f_triangle = permute(double(sampleImage(img, samplePoints)),[2 1 3]); % nT, n, 3
     
-    %{    
-        points = reshape(samplePoints,[],2)+[.5 .5];
-        cols = reshape(permute(f_triangle,[2 1 3]),[],3);
-        figure; hold all; axis equal; 
-        image(img);
-        scatter(points(:,1),points(:,2),100,cols/255,'filled')
-        scatter(points(:,1),points(:,2),'k.')
-    %}  
-    
     % f_triangle: nT  n     3
     % ws:             n  3
     % compute Lj: nT     3  3 
@@ -31,7 +22,7 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     % A =    [nT          ]
     extra.colors_fem = squeeze(sum(reshape(Ki,1, 3, 3, 1).*reshape(Lj,nT,1,3,3)./(2*mesh.triAreas), 3));
     
-    % use least squares to get color per triangle instead of fem method. fem method doesn't work as well because we use inverse mass matrix which assumes a good numerical integral over the image. turns out uniform samples for integrating on triangles isn't that good.
+    % Least Squares color per triangle. In comparison, FEM method doesn't work as well because we use inverse mass matrix assuming a good numerical integral over each triangle. Turns out uniform samples for integrating on triangles isn't that accurate.
     A1 = zeros(n,nT,3);    
     A1(:,:,1:2) = samplePoints; A1(:,:,3)=1;
     AtA = squeeze(sum(A1.*reshape(A1,n,nT,1,3),1));
@@ -51,24 +42,6 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     colors(:,:,2) = gvals;
     colors(:,:,3) = bvals;
     
-    %{
-    figure; hold all; axis equal; 
-    image(img);
-    renderMeshEdges(mesh,[.5 .5]);
-    for i=1:nT
-        verts = X(T(i,:),:);
-        cent = mean(verts);
-        pull = .95;
-        for j=1:3
-            pt = verts(j,:);
-            col = double(squeeze(colors(i,j,:))');
-            plotpt = (pull*pt+(1-pull)*cent) + [.5 .5];
-            scatter(plotpt(1),plotpt(2),100,col/255,'filled');
-            scatter(plotpt(1),plotpt(2),'k.');
-        end
-    end
-    %}
-    
     % compute actual energy.
     % ws:         [   n  3  ]
     % colors:     [nT    3 3]
@@ -76,7 +49,6 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     energyPerColorChannel = mesh.triAreas'*squeeze(vecnorm(linearColor - f_triangle,2,2).^2)/n;
     energy = sum(energyPerColorChannel);
     
-    % todo: optimize. should be slightly redundant with above.
     if nargout >= 3
         %% compute gradient
         
@@ -133,7 +105,9 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
         % dLdt:          [nT   6 3(rgb)  3(phi) ]
         dphi_dt_1 = reshape(permute(dphi_dt,[1 2 4 3]),nT,n,6,1,3);
         f_triangle_1 = reshape(f_triangle,nT,n,1,3,1);
-        dLdt = squeeze(sum(dphi_dt_1.*f_triangle_1.*(mesh.triAreas/n),2)) + int_fvnphi_dl;
+        % Not entirely sure why this area component needs to have a negative sign. Might have forgotten a sign earlier.
+        area_component = -squeeze(sum(dphi_dt_1.*f_triangle_1.*(mesh.triAreas/n),2)); 
+        dLdt = area_component + int_fvnphi_dl;
         
         % build: dcdt
         % dLdt:          [nT        6(v)          3(rgb)    3(phi)    ]
@@ -182,7 +156,6 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
 
         % sum over rgb channels
         gradient = sum(vertGrad,3);
-        assert(norm(reshape(vertGrad(:,:,1)-vertGrad(:,:,2),[],2))==0);
         
         % account for mesh boundary
         gradient = slipConditions(mesh, gradient);
