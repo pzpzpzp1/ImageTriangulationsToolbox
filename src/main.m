@@ -3,16 +3,16 @@ clear all; close all;
 %% input args
 % fname = 'images/appleGray.PNG';
 % fname = 'images/apple.png';
-fname = 'images/sunset.png';
+% fname = 'images/sunset.png';
 % fname = 'images/circle.png';
 % fname = 'images/BW.png';
 % fname = 'images/s2by3.PNG';
-% fname = 'images/toucan.png';
+fname = 'images/toucan.png';
 % fname = 'images/gradientVerticalGray.png';
 % fname = 'images/gradientDiagGray.png';
 % fname = 'images/gradientHorizontalGray.png';
 initialHorizontalSampling = 25;
-degree = 0;
+degree = 1;
 dt0 = 5e-9; % initial dt
 integral1DNsamples = 15;
 maxIters = 1000;
@@ -60,13 +60,13 @@ try
     gradnorms = zeros(maxIters,1);
     for i=1:maxIters
         mesh = MeshFromXT(X,T);
-        [energy(i), colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples);
+        [energy(i), colors, grad, extra] = approx.computeEnergy(img, mesh, integral1DNsamples);
         gradnorms(i) = norm(grad);
         
         if showgrad;
-            render(img,mesh,colors,approx,grad);
+            render(img,mesh,extra.colorsAlt,approx,grad);
         else
-            render(img,mesh,colors,approx,[]);
+            render(img,mesh,extra.colorsAlt,approx,[]);
         end
 
         dt = 1/max(vecnorm(grad,2,2)); % always at most 1 pixel distance traveled per vertex.

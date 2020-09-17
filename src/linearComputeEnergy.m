@@ -1,8 +1,9 @@
 % colors is (3 vertices) (3 rgb) (nT triangles)
 function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
+    extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
-    ws = getBarycentricSamplingWeights(n1D); 
+    [ws, interiorInds] = getBarycentricSamplingWeights(n1D); 
     samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T);
     n = size(ws,1); 
     dA = mesh.triAreas/n; % differential unit of area
@@ -26,31 +27,14 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     % Least Squares color per triangle. 
     % In comparison, FEM method doesn't work as well because inverse mass matrix assumes a good numerical integral over each triangle. 
     % Turns out uniform samples for integrating on triangles isn't that accurate.
-    A1 = zeros(n,nT,3);    
-    A1(:,:,1:2) = samplePoints; A1(:,:,3)=1;
-    AtA = squeeze(sum(A1.*reshape(A1,n,nT,1,3),1));
-    AtAi = multinv(permute(AtA,[2 3 1]));
-    rhsR = squeeze(sum(f_triangle(:,:,1) .* permute(A1,[2 1 3]),2));
-    rhsG = squeeze(sum(f_triangle(:,:,2) .* permute(A1,[2 1 3]),2));
-    rhsB = squeeze(sum(f_triangle(:,:,3) .* permute(A1,[2 1 3]),2));
-    Rcoeffs = squeeze(sum(AtAi .* reshape(rhsR',1,3,nT),2))';
-    Gcoeffs = squeeze(sum(AtAi .* reshape(rhsG',1,3,nT),2))';
-    Bcoeffs = squeeze(sum(AtAi .* reshape(rhsB',1,3,nT),2))';
-    TX = reshape(X(T(:),:),nT,3,2);
-    TX1 = TX; TX1(:,:,3)=1;
-    rvals = sum(TX1.*reshape(Rcoeffs,nT,1,3),3);
-    gvals = sum(TX1.*reshape(Gcoeffs,nT,1,3),3);
-    bvals = sum(TX1.*reshape(Bcoeffs,nT,1,3),3);
-    colors(:,:,1) = rvals;
-    colors(:,:,2) = gvals;
-    colors(:,:,3) = bvals;
+    [colors, extra.colorsAlt] = linearGetColorsFromSamples(mesh, samplePoints, f_triangle, interiorInds);
     
     % compute actual energy.
     % ws:         [   n  3  ]
     % colors:     [nT    3 3]
     linearColor = squeeze(sum(reshape(ws,1,n,3,1).*reshape(colors,nT,1,3,3),3));
-    energyPerColorChannel = dA'*squeeze(vecnorm(linearColor - f_triangle,2,2).^2);
-    energy = sum(energyPerColorChannel);
+    extra.perTriangleRGBError = dA.*squeeze(vecnorm(linearColor - f_triangle,2,2).^2);
+    energy = sum(extra.perTriangleRGBError,'all');
     
     if nargout >= 3
         %% compute gradient
