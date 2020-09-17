@@ -1,22 +1,19 @@
 clear all; close all;
 
 %% input args
-% fname = 'images/appleGray.PNG';
 % fname = 'images/apple.png';
 % fname = 'images/sunset.png';
 % fname = 'images/circle.png';
-% fname = 'images/BW.png';
-% fname = 'images/s2by3.PNG';
-fname = 'images/toucan.png';
-% fname = 'images/gradientVerticalGray.png';
-% fname = 'images/gradientDiagGray.png';
-% fname = 'images/gradientHorizontalGray.png';
-initialHorizontalSampling = 25;
-degree = 1;
+fname = 'images/BW.png';
+% fname = 'images/toucan.png';
+initialHorizontalSampling = 10;
+degree = 0;
 dt0 = 5e-9; % initial dt
-integral1DNsamples = 15;
-maxIters = 1000;
-showgrad = 1;
+integral1DNsamples = 20;
+integral1DNsamplesSubdiv = 50;
+edgeSplitResolution = 10;
+maxIters = 1;
+Nedges2subdivide = 50;
 forceGray = 0;
 perturbInit = 1;
 
@@ -44,30 +41,24 @@ if perturbInit
 end
 
 % initialize approximator
-approx = Approximator(degree);
-
 % get initial polyart
-[energy, colors] = approx.computeEnergy(img, mesh, integral1DNsamples);
-
 % display initial state
+approx = Approximator(degree);
+[extra, energy, colors] = approx.computeEnergy(img, mesh, integral1DNsamples);
 render(img,mesh,colors,approx,[]);
 
 %% simulation loop
-profile on;
 try
     dt = dt0;
     energy = zeros(maxIters,1);
     gradnorms = zeros(maxIters,1);
     for i=1:maxIters
         mesh = MeshFromXT(X,T);
-        [energy(i), colors, grad, extra] = approx.computeEnergy(img, mesh, integral1DNsamples);
+        
+        [extra, energy(i), colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples);
         gradnorms(i) = norm(grad);
         
-        if showgrad;
-            render(img,mesh,extra.colorsAlt,approx,grad);
-        else
-            render(img,mesh,extra.colorsAlt,approx,[]);
-        end
+        render(img,mesh,extra.colorsAlt,approx,grad);
 
         dt = 1/max(vecnorm(grad,2,2)); % always at most 1 pixel distance traveled per vertex.
         if norm(grad)==0; break; end;
@@ -77,9 +68,19 @@ catch ex
     erStack = ex.stack;
 end
 render(img,mesh,colors,approx,[]);
-figure; plot(energy(1:i)); title('energy');
-figure; plot(gradnorms(1:i)); title('gradnorm');
-profile viewer;
+figure; 
+subplot(1,2,1); hold all; title('energy'); plot(energy(1:i)); 
+subplot(1,2,2); hold all; title('gradnorm'); plot(gradnorms(1:i)); 
+
+%% do subdivision method
+score = getEdgeSplitScore(mesh, img, approx, integral1DNsamplesSubdiv);
+edgeInds = drawEdgesToSplit(Nedges2subdivide, score);
+[X,T,dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img, edgeSplitResolution);
+mesh = MeshFromXT(X,T);
+[extra, energy(i), colors] = approx.computeEnergy(img, mesh, integral1DNsamples);
+render(img,mesh,extra.colorsAlt,approx,[]);
+
+
 
 
 

@@ -1,8 +1,24 @@
 function f1 = render(img, mesh, colors, approx, grad)
+    %% set up figure such that closing it throws an error, 
+    % but also you don't have to initialize a figure outside of this function
+    persistent pfh;
+    if numel(pfh)==0
+        f1 = gcf; 
+        f1.Name = 'image triangulations interface';
+        pfh = f1;
+    end
+    try
+        figure(pfh);
+    catch ex
+        % this does mean that running render once can cause an error, and the next call won't.
+        clear pfh;
+        throw ex;
+    end
+    
+    %% draw on figure pfh
+    clf; set(pfh,'color','w');
+    pfh.Visible = 'off';
     X = mesh.X; T = mesh.T;
-    f1 = gcf; f1.Name = 'image triangulations interface';
-    clf; set(gcf,'color','w');
-    f1.Visible = 'off';
     subplot_er(1,2,1); set(gca, 'YDir','reverse');
     image(img); hold all; axis equal; axis off;
     renderMeshEdges(mesh,[.5 .5]);
@@ -19,6 +35,6 @@ function f1 = render(img, mesh, colors, approx, grad)
     if numel(grad)~=0; quiver(X(:,1), X(:,2), grad(:,1), grad(:,2),'c'); end;
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on');
     
-    set(gcf,'Visible','on');
+    set(pfh,'Visible','on');
     drawnow;
 end

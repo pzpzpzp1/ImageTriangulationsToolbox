@@ -1,5 +1,5 @@
 % colors is (3 vertices) (3 rgb) (nT triangles)
-function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
+function [extra, energy, colors, gradient] = linearComputeEnergy(img, mesh, n1D)
     extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
@@ -36,7 +36,7 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
     extra.perTriangleRGBError = dA.*squeeze(vecnorm(linearColor - f_triangle,2,2).^2);
     energy = sum(extra.perTriangleRGBError,'all');
     
-    if nargout >= 3
+    if nargout >= 4
         %% compute gradient
         Lj_1 = permute(Lj,[1 3 2]); % permuted for convenience: nT, rgb, phi
         
@@ -101,16 +101,11 @@ function [energy, colors, gradient, extra] = linearComputeEnergy(img, mesh, n1D)
         % gradPrep_1: [nT 6=(2(xy) x 3(verts)) 3(rgb)]
         gradPrep_1 = sum(dcdt.*reshape(Lj_1,nT,1,3,3) + reshape(colors_1,nT,1,3,3).*dLdt,4);
         % gradPrep: [nT 3(verts) 6=(2(xy) x 3(rgb))] % bundle xy with rgb.
-        gradPrep = -reshape(permute(reshape(gradPrep_1,nT,2,3,3),[1 3 2 4]),nT,3,6); 
+        extra.gradPrep = -permute(reshape(gradPrep_1,nT,2,3,3),[1 3 2 4]);
         
         %% accumulate the per triangle gradient values onto vertices.
-        nX = size(X,1); 
-        vertGrad = zeros(nX,6);
-        for i=1:6
-            vertGrad(:,i) = accumarray(mesh.T(:), reshape(gradPrep(:,:,i),[],1));
-        end
-        vertGrad = reshape(vertGrad,nX,2,3);
-
+        vertGrad = moveTrianglevertValuesToVertexValues(mesh, extra.gradPrep);
+        
         % sum over rgb channels
         gradient = sum(vertGrad,3);
         

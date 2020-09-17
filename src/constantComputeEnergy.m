@@ -1,4 +1,4 @@
-function [energy, colors, gradient, extra] = constantComputeEnergy(img, mesh, integral1DNsamples)
+function [extra, energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1DNsamples)
     extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
@@ -16,7 +16,7 @@ function [energy, colors, gradient, extra] = constantComputeEnergy(img, mesh, in
     extra.perTriangleRGBError = squeeze(sum((f_triangle - reshape(colors,1,nT,3)).^2,1)).*dA;
     energy = sum(extra.perTriangleRGBError,'all');
     
-    if nargout >= 3
+    if nargout >= 4
         %% compute gradient
         % vn is (nT, n, 3, 6). 3 for number of edges. 6 for number of velocity values.
         vndl = sampleVdotN_dl(mesh, integral1DNsamples);
@@ -34,16 +34,11 @@ function [energy, colors, gradient, extra] = constantComputeEnergy(img, mesh, in
         % gradPrep: nT(tris per mesh), 3(verts per tri), 2(xy coords), 3(rgb channels)
         A = 2*mesh.triAreas.*reshape(int_f_dA,nT,1,3).*int_fvn_dl;
         B = - reshape(int_f_dA2,nT,1,3).*mesh.dAdt;
-        gradPrep = -reshape(permute(reshape((A+B)./mesh.triAreas.^2,nT,2,3,3),[1 3 2 4]),nT,3,6); 
-
-        % accumulate per triangle gradient values to vertices.
-        nX = size(X,1);
-        vertGrad = zeros(nX,6);
-        for i=1:6
-            vertGrad(:,i) = accumarray(mesh.T(:), reshape(gradPrep(:,:,i),[],1));
-        end
-        vertGrad = reshape(vertGrad,nX,2,3);
-
+        extra.gradPrep = -permute(reshape((A+B)./mesh.triAreas.^2,nT,2,3,3),[1 3 2 4]);
+        
+        %% accumulate per triangle gradient values to vertices.
+        vertGrad = moveTrianglevertValuesToVertexValues(mesh, extra.gradPrep);
+        
         % sum over rgb channels
         gradient = sum(vertGrad,3);
 

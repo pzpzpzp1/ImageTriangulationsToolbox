@@ -1,4 +1,7 @@
-function mesh = MeshFromXT(X,T)
+function mesh = MeshFromXT(X,T,isTriangleSoup)
+    if nargin < 3
+        isTriangleSoup = false;
+    end
     mesh.X = X;
     mesh.T = T;
     mesh.nX = size(X,1);
@@ -11,7 +14,9 @@ function mesh = MeshFromXT(X,T)
     
     allEdges = [T(:,[1 2]); T(:,[2 3]); T(:,[3 1])];
     [mesh.edges, ia, ic] = unique(sort(allEdges,2),'rows');
+    mesh.nE = size(mesh.edges,1);
     
+    % triangle edge ordering is clockwise and matches vertex ordering by default!
     %[~, inds] = ismember(reshape(sort(permute(reshape(mesh.T(:,[1 2 2 3 3 1]),[],2,3),[1 3 2]),3),mesh.nT*3,2),  sort(mesh.edges,2), 'rows');
     % mesh.triangles2edges = reshape(inds,mesh.nT,3);
     mesh.triangles2edges = reshape(ic,size(T,1),3);
@@ -29,19 +34,9 @@ function mesh = MeshFromXT(X,T)
     mesh.triangleEdgeNormals = -mesh.triangleEdgeNormals ./ vecnorm(mesh.triangleEdgeNormals,2,3);
     mesh.triangleEdgeLengths = [vecnorm(e1,2,2) vecnorm(e2,2,2) vecnorm(e3,2,2)];
     
-%     figure; hold all;axis equal;
-%     for i=1:mesh.nT
-%         triv = mesh.X(mesh.T(i,:),:);
-%         triv = triv*.9 + .1*mean(triv);
-%         ecs = (triv + circshift(triv,-1)) /2;
-%         patch('vertices',triv,'faces',[1 2 3],'facecolor','green','facealpha',.2)
-%         en = squeeze(mesh.triangleEdgeNormals(i,:,:));
-%         quiver(ecs (:,1),ecs (:,2),en(:,1),en(:,2),'r');
-%         pause
-%     end
-    
     %% boundary handling. Specific to rectangular boundary mesh!
     isBoundaryEdge = accumarray(mesh.triangles2edges(:),ones(3*size(T,1),1))==1;
+    mesh.isBoundaryEdge = isBoundaryEdge;
     edgetangs = X(mesh.edges(:,1),:)-X(mesh.edges(:,2),:);
     edgetangs = edgetangs./vecnorm(edgetangs,2,2);
     isXEdge = abs(edgetangs*[0 1]')<.000001;
@@ -60,14 +55,19 @@ function mesh = MeshFromXT(X,T)
     altitudes = altitudes./vecnorm(altitudes,2,2);
     mesh.dAdt = reshape(vecnorm(e312,2,2).*altitudes/2,[],6); %nT, 6=(2(xy) x 3(verts)).
     
-    %{
-    dirs = squeeze(altitudes(end,:,:))';
-    XT = X(T(end,:),:);
-    figure; hold all; axis equal;
-    plot(XT(:,1), XT(:,2));
-    quiver(XT(:,1), XT(:,2), dirs(:,1), dirs(:,2));
-    %}
-    
-    
-    
+    if ~isTriangleSoup
+        %% build edges2triangles matrix
+        T2Emat = sparse(repmat([1:mesh.nT]',3,1),mesh.triangles2edges(:),ones(3*mesh.nT,1),mesh.nT,mesh.nE);
+        boundaryEdges2Tri = T2Emat(:, mesh.isBoundaryEdge)';
+        interiorEdges2Tri = T2Emat(:, ~mesh.isBoundaryEdge)';
+        [II,JJ] = find(interiorEdges2Tri);
+        [~,perm] = sort(II);
+        interiorEdges2TriInds = reshape(JJ(perm),2,[])';
+        [II, JJ] = find(boundaryEdges2Tri);
+        [~,perm] = sort(II);
+        boundaryEdges2TriInds = JJ(perm);
+        mesh.edges2triangles = zeros(mesh.nE,2);
+        mesh.edges2triangles(mesh.isBoundaryEdge,:) = [boundaryEdges2TriInds boundaryEdges2TriInds];
+        mesh.edges2triangles(~mesh.isBoundaryEdge,:) = interiorEdges2TriInds;
+    end
 end
