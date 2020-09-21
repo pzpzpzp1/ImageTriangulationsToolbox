@@ -1,17 +1,17 @@
 clear all; close all;
 %% input args
 % INPUT FILE
-% fname = 'images/gradient1.png';
+fname = 'images/gradient1.png';
 % fname = 'images/zebra.jpg';
 % fname = 'images/person.jpg';
 % fname = 'images/apple.jpg';
 % fname = 'images/face2.jpg';
-fname = 'images/face3.jpg';
+% fname = 'images/face3.jpg';
 
 % SALIENCY MAP PARAMETERS
 % salstrat = SaliencyStrategy.none;
-% salstrat = SaliencyStrategy.map;
-salstrat = SaliencyStrategy.manual;
+salstrat = SaliencyStrategy.map;
+% salstrat = SaliencyStrategy.manual;
 % salstrat = SaliencyStrategy.edge; edgediffusion = 5;
 boostFactor = 10;
 
@@ -28,8 +28,8 @@ maxIters = 250;
 % optstrat = OptStrategy.none;
 % optstrat = OptStrategy.nonlinearCG; nonlinearCG = 2;
 optstrat = OptStrategy.adaDelta; rateflag = 2;
-% demandedEnergyDensityDrop = 5; windowSize = 5;
-demandedEnergyDensityDrop = inf; windowSize = 1;
+demandedEnergyDensityDrop = 5; windowSize = 5;
+% demandedEnergyDensityDrop = inf; windowSize = 1;
 
 % dtstrat = DtStrategy.none; 
 dtstrat = DtStrategy.onepix;
