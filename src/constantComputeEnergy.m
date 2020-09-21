@@ -1,4 +1,4 @@
-function [extra, energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1DNsamples)
+function [extra, energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1DNsamples, salmap)
     extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
@@ -22,7 +22,7 @@ function [extra, energy, colors, gradient] = constantComputeEnergy(img, mesh, in
         vndl = sampleVdotN_dl(mesh, integral1DNsamples);
 
         % generate edge samples of f
-        edgeSamplePoints = getEdgeSamplePoints(mesh,integral1DNsamples);
+        edgeSamplePoints = getTriEdgeSamplePoints(mesh,integral1DNsamples);
         f_tri_edges = double(sampleImage(img, edgeSamplePoints));
 
         % create components needed to compute gradient
@@ -35,7 +35,7 @@ function [extra, energy, colors, gradient] = constantComputeEnergy(img, mesh, in
         A = 2*mesh.triAreas.*reshape(int_f_dA,nT,1,3).*int_fvn_dl;
         B = - reshape(int_f_dA2,nT,1,3).*mesh.dAdt;
         extra.gradPrep = -permute(reshape((A+B)./mesh.triAreas.^2,nT,2,3,3),[1 3 2 4]);
-        
+                
         %% accumulate per triangle gradient values to vertices.
         vertGrad = moveTrianglevertValuesToVertexValues(mesh, extra.gradPrep);
         

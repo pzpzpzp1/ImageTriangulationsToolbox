@@ -4,7 +4,7 @@
 function [descDir, rates] = getAdadeltaDescDir(grad, rateflag)
     nX = size(grad,1);
     persistent expG2 expTh2;
-    if numel(expG2)==0
+    if numel(expG2)==0 || size(grad,1)~=size(expG2,1);
         descDir = -grad;
         expG2 = sum(grad.^2,2);
         expTh2 = sum(descDir.^2,2);

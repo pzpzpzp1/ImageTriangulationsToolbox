@@ -23,9 +23,7 @@ function esMesh = buildEdgeSplitMesh(mesh)
     Tnew = reshape(permute(reshape(Tnew1,nE,4,3),[2 1 3]),[],3);
     
     % reorient inverted triangles
-    v1 = Xnew(Tnew(:,1),:);  v2 = Xnew(Tnew(:,2),:);  v3 = Xnew(Tnew(:,3),:);
-    e12 = [v1-v2]; e12(1,3) = 0; e23 = [v2-v3]; e23(1,3) = 0;
-    flippedTris = (cross(e12,e23)/2)*[0 0 1]' < 0;
+    flippedTris = getTriangleAreas(Xnew, Tnew) < 0;
     Tnew(flippedTris,:) = Tnew(flippedTris,[1 3 2]);
     
     % triangle soup

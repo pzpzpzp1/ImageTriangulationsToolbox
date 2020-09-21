@@ -1,4 +1,5 @@
 function [Xnew, Tnew, dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img, n1D)
+    
     %% part 1: find subset of edgeInds that don't conflict with each other. prioritize edges at top of list.
     isCoveredTriangles = false(mesh.nT,1);
     keepEdgeInd = false(numel(edgeInds),1);
@@ -41,21 +42,18 @@ function [Xnew, Tnew, dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img,
     [II,JJ] = find(~squeeze(sum(reshape(v123,ne ,1,3) == v23,2)));
     [~,perm] = sort(II);
     v1 = v123(sub2ind(size(v123),[1:ne ]',JJ(perm)));
+    ip1 = mod(JJ(perm)+1,3); ip1(ip1==0)=3;
+    ip2 = mod(JJ(perm)+2,3); ip2(ip2==0)=3;
+    v2 = v123(sub2ind(size(v123),[1:ne ]',ip1));
+    v3 = v123(sub2ind(size(v123),[1:ne ]',ip2));
     [II,JJ] = find(~squeeze(sum(reshape(v234,ne ,1,3) == v23,2)));
     [~,perm] = sort(II);
     v4 = v234(sub2ind(size(v234),[1:ne ]',JJ(perm)));
-    v2 = v23(:,1);
-    v3 = v23(:,2);
     v5 = ((nX+1):(nX+ne))';
     Xnew = [X; ws.*X(mesh.edges(edgeInds,1),:) + (1-ws).*X(mesh.edges(edgeInds,2),:)];
-    Tnew = [T(~isCoveredTriangles,:); v1 v2 v5; v5 v2 v4; v3 v5 v4; v1 v5 v3];
-    Tnew = unique(sort(Tnew,2),'rows'); % get rid of any duplicated triangles from splitting boundary edge.
-    
-    % reorient inverted triangles
-    v1 = Xnew(Tnew(:,1),:);  v2 = Xnew(Tnew(:,2),:);  v3 = Xnew(Tnew(:,3),:);
-    e12 = [v1-v2]; e12(1,3) = 0; e23 = [v2-v3]; e23(1,3) = 0;
-    flippedTris = (cross(e12,e23)/2)*[0 0 1]' < 0;
-    Tnew(flippedTris,:) = Tnew(flippedTris,[1 3 2]);
+    dedupBoundary = ~mesh.isBoundaryEdge(edgeInds);
+    Tnew = [T(~isCoveredTriangles,:); v1 v2 v5; v1 v5 v3; v5(dedupBoundary) v2(dedupBoundary) v4(dedupBoundary); v3(dedupBoundary) v5(dedupBoundary) v4(dedupBoundary); ];
+    assert(size(unique(sort(Tnew,2),'rows'),1) == size(Tnew,1)); % should be no dupes
     
     %{
     figure; 

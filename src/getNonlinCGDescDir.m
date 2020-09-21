@@ -2,7 +2,7 @@
 % wikipedia recommends P.R.
 function [descDir, beta] = getNonlinCGDescDir(grad, betaFlag)
     persistent prevGrad prevDescDir
-    if numel(prevGrad)==0
+    if numel(prevGrad)==0 || size(grad,1)~=size(prevGrad,1)
         prevGrad = zeros(size(grad));
         prevDescDir = prevGrad;
     end

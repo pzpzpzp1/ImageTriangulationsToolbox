@@ -1,5 +1,5 @@
 % colors is (3 vertices) (3 rgb) (nT triangles)
-function [extra, energy, colors, gradient] = linearComputeEnergy(img, mesh, n1D)
+function [extra, energy, colors, gradient] = linearComputeEnergy(img, mesh, n1D, salmap)
     extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
@@ -56,7 +56,7 @@ function [extra, energy, colors, gradient] = linearComputeEnergy(img, mesh, n1D)
 
         % generate edge samples of f.
         % edgeSamplePoints: [nT, n, 3(edges), 2(xy)]
-        edgeSamplePoints = getEdgeSamplePoints(mesh,n1D);
+        edgeSamplePoints = getTriEdgeSamplePoints(mesh,n1D);
         % f_tri_edges:      [nT, n, 3(edges), 3(rgb)]
         f_tri_edges = double(sampleImage(img, edgeSamplePoints));
 
