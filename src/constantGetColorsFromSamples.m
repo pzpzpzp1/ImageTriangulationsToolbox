@@ -5,11 +5,13 @@
 % mesh must have X and T
 % sampleVals             [nT n 3]
 % interiorInds           [n]
-function [colors, colorsAlt] = constantGetColorsFromSamples(sampleVals, interiorInds)
+function [colors, colorsAlt] = constantGetColorsFromSamples(sampleVals, interiorInds, saliencySamples)
     %% compute full mean per triangle
-    colors = squeeze(mean(sampleVals,1));
+    normalizer = sum(saliencySamples,1);
+    colors = squeeze(sum(sampleVals.*saliencySamples,1)./normalizer);
     
     %% compute full mean per triangle
-    colorsAlt = squeeze(mean(sampleVals(interiorInds,:,:),1));
-
+    normalizerAlt = sum(saliencySamples(interiorInds,:),1);
+    colorsAlt = squeeze(sum(sampleVals(interiorInds,:,:).*saliencySamples(interiorInds,:),1)./normalizerAlt);
+    
 end

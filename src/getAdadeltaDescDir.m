@@ -12,7 +12,7 @@ function [descDir, rates] = getAdadeltaDescDir(grad, rateflag)
         return;
     end
     
-    gamma = .8; 
+    gamma = .7; 
     eps = 1e-8;
     
     % update decaying average of previous gradient square norms

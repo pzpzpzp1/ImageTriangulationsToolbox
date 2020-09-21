@@ -1,5 +1,5 @@
 classdef DtStrategy
    enumeration
-      none, linesearch, onepix
+      none, constrained, onepix
    end
 end

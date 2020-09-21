@@ -1,12 +1,12 @@
 % computes energy with and without edge split down the middle. edges that decrease in energy more when split will have higher score.
 % score: [nE]. Higher scores for edges that should be split. 
-function score = getEdgeSplitScore(mesh,img,approx,integral1DNsamples)
+function score = getEdgeSplitScore(mesh,img,approx,integral1DNsamples, salmap)
 % build triangle soup of all possible divisions
 esMesh = buildEdgeSplitMesh(mesh);
 % compute energy per triangle of the soup
-esExtra = approx.computeEnergy(img, esMesh, integral1DNsamples);
+esExtra = approx.computeEnergy(img, esMesh, integral1DNsamples, salmap);
 % compute the no split energy. this may be redundant with previous computation, but is quite fast and makes the function more standalone.
-extra = approx.computeEnergy(img, mesh, integral1DNsamples);
+extra = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
 
 % assemble the edge division comparisions
 brokenEdgeEnergies = sum(permute(reshape(esExtra.perTriangleRGBError,4,[],3),[2 3 1]),3);

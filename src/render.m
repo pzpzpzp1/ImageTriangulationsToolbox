@@ -37,7 +37,7 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
     if numel(grad)~=0; quiver(X(:,1), X(:,2), grad(:,1), grad(:,2),'c'); end;
     if numel(salmap)~=0 && norm(salmap-1,'fro')~=0
-        boost = (salmap-1); imh = image(boost./max(boost(:))*256); imh.AlphaData = .3;
+        boost = (salmap-1); imh = image(boost./max(boost(:))*256); imh.AlphaData = .3*boost/max(boost(:));
     end
     
     set(pfh,'Visible','on');

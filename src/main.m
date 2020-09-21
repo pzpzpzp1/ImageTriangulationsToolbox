@@ -1,48 +1,51 @@
 clear all; close all;
 %% input args
 % INPUT FILE
-fname = 'images/gradient1.png';
+% fname = 'images/gradient1.png';
 % fname = 'images/zebra.jpg';
 % fname = 'images/person.jpg';
 % fname = 'images/apple.jpg';
 % fname = 'images/face2.jpg';
-% fname = 'images/face3.jpg';
+fname = 'images/face3.jpg';
 
 % SALIENCY MAP PARAMETERS
 % salstrat = SaliencyStrategy.none;
-salstrat = SaliencyStrategy.map;
-% salstrat = SaliencyStrategy.manual;
+% salstrat = SaliencyStrategy.map;
+salstrat = SaliencyStrategy.manual;
 % salstrat = SaliencyStrategy.edge; edgediffusion = 5;
 boostFactor = 10;
 
 % INITIAL MESH DETAILS
-initialHorizontalSampling = 15;
+initialHorizontalSampling = 20;
 perturbInit = 0;
 
 % MISC PARAMETERS
 degree = 0;
 forceGray = 0;
-maxIters = 250;
+maxIters = 500;
 
 % OPTIMIZATION PARAMETERS
 % optstrat = OptStrategy.none;
 % optstrat = OptStrategy.nonlinearCG; nonlinearCG = 2;
 optstrat = OptStrategy.adaDelta; rateflag = 2;
-demandedEnergyDensityDrop = 5; windowSize = 5;
+% demandedEnergyDensityDrop = 0; windowSize = inf;
+demandedEnergyDensityDrop = 5; windowSize = 20; 
 % demandedEnergyDensityDrop = inf; windowSize = 1;
+areafactor = 1e6;
 
 % dtstrat = DtStrategy.none; 
-dtstrat = DtStrategy.onepix;
-% dtstrat = DtStrategy.linesearch; lineSearchFactor = 4/3; 
+% dtstrat = DtStrategy.onepix;
+dtstrat = DtStrategy.constrained; backoffFactor = 4/3; 
 
 % INTEGRATION ACCURACY
 integral1DNsamples = 15;
 
 % SUBDIVISION PARAMETERS
 integral1DNsamplesSubdiv = 50;
-edgeSplitResolution = 5;
-Nedges2subdivide = 5;
+edgeSplitResolution = 10;
+Nedges2subdivide = 20;
 subdivmax = 20; % times to do subdivision
+subdivisionDamper = 5;
 
 %% start processing
 % load image
@@ -82,7 +85,6 @@ elseif salstrat == SaliencyStrategy.manual
     if norm(boost,'fro')~=0; boost = boost ./ max(boost(:)); end;
     salmap = salmap + boost*boostFactor;
 elseif salstrat == SaliencyStrategy.none
-    
 end
 
 % initialize triangulation
@@ -114,17 +116,20 @@ try
         mesh = MeshFromXT(X,T);
         
         %% compute new colors for updated mesh and display
-        [extra, energy(i), colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
-        gradnorms(i) = norm(grad,'fro');
+        [extra, approxEnergy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
+        [areaEnergy, areaGradient] = getAreaEnergy(mesh);
+        energy(i) = approxEnergy*areafactor + areaEnergy;
+        totalGrad = areaGradient*areafactor + grad;
+        gradnorms(i) = norm(totalGrad,'fro');
         
         %% obtain descent direction
         if optstrat==OptStrategy.nonlinearCG
-            [descDir, beta] = getNonlinCGDescDir(grad, nonlinearCG);
+            [descDir, beta] = getNonlinCGDescDir(totalGrad, nonlinearCG);
         elseif optstrat==OptStrategy.adaDelta
-            [descDir, rates] = getAdadeltaDescDir(grad, rateflag);
+            [descDir, rates] = getAdadeltaDescDir(totalGrad, rateflag);
             shortScatter(X, rates, -1);
         elseif optstrat==OptStrategy.none
-            descDir = -grad;
+            descDir = -totalGrad;
         end
         
         render(img,mesh,extra.colorsAlt,approx,descDir,salmap);
@@ -136,14 +141,11 @@ try
                 % do subdivision
                 subdiviters(subdivcount)=i;
                 subdivcount = subdivcount + 1;
-                score = getEdgeSplitScore(mesh, img, approx, integral1DNsamplesSubdiv);
+                score = getEdgeSplitScore(mesh, img, approx, integral1DNsamplesSubdiv, salmap);
                 
-                sal_edges = double(sampleImage(salmap, getEdgeSamplePoints(mesh,integral1DNsamples)));
-                edgeSalBoost = sum(sal_edges,2)/integral1DNsamples;
-                
-                edgeInds = drawEdgesToSplit(Nedges2subdivide, score.*edgeSalBoost);
+                edgeInds = drawEdgesToSplit(Nedges2subdivide, score);
                 [X,T,dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img, edgeSplitResolution);
-                demandedEnergyDensityDrop = demandedEnergyDensityDrop / 10;
+                demandedEnergyDensityDrop = demandedEnergyDensityDrop / subdivisionDamper;
                 continue;
             else
                 display('Optimization finished!');
@@ -152,15 +154,10 @@ try
         end
         
         %% find a good dt to use
-        if dtstrat == DtStrategy.linesearch
-            % line search. doesn't work well because energy is not differentiable and all integrals are approximated.
-            dt = dt * lineSearchFactor^2;
-            nextEnergy = inf;
-            while nextEnergy > energy(i)
-                dt = dt/lineSearchFactor;
-                Xls = X + dt * descDir;
-                if any(getTriangleAreas(Xls,T)<0); continue; end
-                [~, nextEnergy] = approx.computeEnergy(img, MeshFromXT(Xls,T), integral1DNsamples);
+        if dtstrat == DtStrategy.constrained
+            dt = 1/max(vecnorm(descDir,2,2));
+            while any(getTriangleAreas(X+dt*descDir,T)<0)
+                dt = dt / 2;
             end
         elseif dtstrat == DtStrategy.onepix
             dt = 1/max(vecnorm(descDir,2,2));
@@ -171,6 +168,7 @@ try
         
         %% update state
         X = X + dt * descDir;
+        X = clipVerts(X,width,height);
     end
 catch ex
     erStack = ex.stack;
@@ -178,7 +176,7 @@ end
 render(img,mesh,colors,approx,[],[]);
 figure; 
 subplot(3,1,1); hold all; title('energy'); plot(energy(1:i-1)); 
-for i=1:subdivmax; xline(subdiviters(i)); end
+for j=1:subdivmax; xline(subdiviters(j)); end
 subplot(3,1,2); hold all; title('gradnorm'); plot(gradnorms(1:i-1)); 
 subplot(3,1,3); hold all; title('dt'); plot(dts(1:i-1)); 
 

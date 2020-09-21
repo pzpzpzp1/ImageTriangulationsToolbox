@@ -7,8 +7,11 @@ function mesh = MeshFromXT(X,T,isTriangleSoup)
     mesh.nX = size(X,1);
     mesh.nT = size(T,1);
     
-    mesh.triAreas = getTriangleAreas(X,T);
-%     assert(all(mesh.triAreas>0));
+    mesh.signedTriAreas = getTriangleAreas(X,T);
+    mesh.triAreas = mesh.signedTriAreas; % also signed. tested abs on this but that results in a numerical explosion once an inversion forms. 
+    
+    % with signed area as integration element and with edge normals pointing inwards on inverted triangles, the algorithm is surprisingly stable under inversions. however, the best thing to do is probably just precvent inversions after all. it's too unpredictable.
+    assert(all(mesh.triAreas>0));
     
     allEdges = [T(:,[1 2]); T(:,[2 3]); T(:,[3 1])];
     [mesh.edges, ia, ic] = unique(sort(allEdges,2),'rows');
@@ -31,6 +34,10 @@ function mesh = MeshFromXT(X,T,isTriangleSoup)
     mesh.triangleEdgeNormals(:,3,1) = - e3(:,2);
     mesh.triangleEdgeNormals(:,3,2) = e3(:,1);
     mesh.triangleEdgeNormals = -mesh.triangleEdgeNormals ./ vecnorm(mesh.triangleEdgeNormals,2,3);
+    
+    % you might think the normals should be fliped if triangle is inverted, but empirical testing shows significant instability if you do flip it. ultimately just make sure the mesh isn't inverted...
+    % mesh.triangleEdgeNormals = mesh.triangleEdgeNormals.*((mesh.signedTriAreas>0)-.5)*2;
+    
     mesh.triangleEdgeLengths = [vecnorm(e1,2,2) vecnorm(e2,2,2) vecnorm(e3,2,2)];
     
     %% boundary handling. Specific to rectangular boundary mesh!
@@ -53,6 +60,15 @@ function mesh = MeshFromXT(X,T,isTriangleSoup)
     altitudes = e123 - sum(e123.*e312,2)./vecnorm(e312,2,2).^2.*e312;
     altitudes = altitudes./vecnorm(altitudes,2,2);
     mesh.dAdt = reshape(vecnorm(e312,2,2).*altitudes/2,[],6); %nT, 6=(2(xy) x 3(verts)).
+    
+    %{
+    tind = 22;
+    vs = X(T(tind,:),:);
+    dirs = reshape(mesh.dAdt(tind,:),2,3)';
+    figure; hold all; axis equal; 
+    quiver(vs(:,1),vs(:,2),dirs(:,1),dirs(:,2))
+    patch('vertices',vs,'faces',[1 2 3],'facecolor','green')
+    %}
     
     if ~isTriangleSoup
         %% build edges2triangles matrix
