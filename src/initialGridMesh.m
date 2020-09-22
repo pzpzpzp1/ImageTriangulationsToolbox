@@ -13,9 +13,9 @@ function [X,T] = initialGridMesh(width, height, initialHorizontalSampling, rands
     TR = inds(1:end-1,2:end);
     BL = inds(2:end,1:end-1);
     BR = inds(2:end,2:end);
-    slantDirection = rand(size(BR))>.5;
     % clockwise oriented triangles
     if randslant
+        slantDirection = rand(size(BR))>.5;
         T1 = [TL(slantDirection) TR(slantDirection) BL(slantDirection); BL(slantDirection) TR(slantDirection) BR(slantDirection)];
         T2 = [TL(~slantDirection) BR(~slantDirection) BL(~slantDirection); BR(~slantDirection) TL(~slantDirection) TR(~slantDirection)];
         T = [T1;T2];

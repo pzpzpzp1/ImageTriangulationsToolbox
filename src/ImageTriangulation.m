@@ -5,7 +5,8 @@ function ImageTriangulation(fname, ...
         optstrat, demandedEnergyDensityDrop, windowSize, ...
         dtstrat,...
         integral1DNsamples,...
-        integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper ...
+        integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, ...
+        iMesh...
         )
     
     if nargin == 0
@@ -25,11 +26,13 @@ function ImageTriangulation(fname, ...
         boostFactor = 10;
 
         % INITIAL MESH DETAILS
-        initialHorizontalSampling = 20;
+        initialHorizontalSampling = 25;
         perturbInit = 0;
+%         iMesh = initialMesh.hexagonal;
+        iMesh = initialMesh.trim;
 
         % MISC PARAMETERS
-        degree = 1;
+        degree = 0;
         forceGray = 0;
         maxIters = 500;
         saveOut = 0; outputDir = 'output';
@@ -39,7 +42,7 @@ function ImageTriangulation(fname, ...
         % optstrat = OptStrategy.adaDelta; 
         optstrat = OptStrategy.RMSProp; 
         % demandedEnergyDensityDrop = 0; windowSize = inf;
-        demandedEnergyDensityDrop = 5; windowSize = 20; 
+        demandedEnergyDensityDrop = 5; windowSize = 200; 
         % demandedEnergyDensityDrop = inf; windowSize = 1;
         
         % dtstrat = DtStrategy.none; 
@@ -54,6 +57,7 @@ function ImageTriangulation(fname, ...
         Nedges2subdivide = 20;
         subdivmax = 10; % times to do subdivision
         subdivisionDamper = 5;
+        
     end
 %% start processing
 [path, name, ext] = fileparts(fname);
@@ -107,9 +111,17 @@ elseif salstrat == SaliencyStrategy.none
 end
 
 % initialize triangulation
-[X,T] = initialHexLatticeMesh(width, height, initialHorizontalSampling);
+if iMesh == initialMesh.hexagonal
+    [X,T] = initialHexLatticeMesh(width, height, initialHorizontalSampling);
+elseif iMesh == initialMesh.grid
+    [X,T] = initialGridMesh(width, height, initialHorizontalSampling, 1);
+elseif iMesh == initialMesh.trim
+    mappedDensity = (initialHorizontalSampling*.004-.01).^2*9; % maps sampling to density in range [5 - 25].
+    [X, T, ~] = imtriangulate(img, mappedDensity); 
+end
 mesh = MeshFromXT(X,T);
-
+  
+    
 % perturb interior vertices for more randomness
 if perturbInit
     X(mesh.isInterior,:) = X(mesh.isInterior,:) + randn(size(X(mesh.isInterior,:)))*mean(sqrt(2*mesh.triAreas))/15;
