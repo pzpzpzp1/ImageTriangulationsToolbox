@@ -2,19 +2,12 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     %% set up figure such that closing it throws an error, 
     % but also you don't have to initialize a figure outside of this function
     persistent pfh;
-    if numel(pfh)==0
+    if numel(pfh)==0 || ~isvalid(pfh)
         f1 = gcf; 
         f1.Units = 'normalized';
         f1.OuterPosition = [0 0 1 1];
         f1.Name = 'image triangulations interface';
         pfh = f1;
-    end
-    try
-        figure(pfh);
-    catch ex
-        % this does mean that running render once can cause an error, and the next call won't.
-        clear pfh;
-        throw ex;
     end
     
     %% draw on figure pfh
@@ -28,6 +21,8 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     if numel(salmap)~=0 && norm(salmap-1,'fro')~=0
         boost = (salmap-1); imh = image(boost./max(boost(:))*256); imh.AlphaData = .3*boost/max(boost(:));
     end
+    title(sprintf('(X:%d) (T:%d)',mesh.nX, mesh.nT));
+    
     
     ax2 = subplot_er(1,2,2);
     hold all; axis equal; axis off;

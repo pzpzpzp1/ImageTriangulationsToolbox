@@ -14,8 +14,8 @@ function [ws, interiorInds] = getBarycentricSamplingWeights(n)
         keep = find(W>=-eps);
         assert(numel(keep)==n*(n+1)/2); % another thresholding sanity check
         cachedWs{n} = [U(keep) V(keep) W(keep)];
-        % cachedInteriorInds{n} = ~any(abs(cachedWs{n}) < eps,2); % 1 layer interior
-        cachedInteriorInds{n} = ~any(abs(cachedWs{n}) < 1/(n-1)+eps,2); % 1 layer interior
+        layersdeep = 3;
+        cachedInteriorInds{n} = ~any(abs(cachedWs{n}) < (layersdeep-1)/(n-1) + eps,2); % 1 layer interior
     end
     ws = cachedWs{n};
     interiorInds = cachedInteriorInds{n};

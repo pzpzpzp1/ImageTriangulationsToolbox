@@ -2,7 +2,7 @@ function ImageTriangulation(fname, ...
         salstrat, boostFactor,...
         initialHorizontalSampling, perturbInit,...
         degree, forceGray, maxIters, saveOut, outputDir, ... 
-        optstrat, demandedEnergyDensityDrop, windowSize, areafactor,...
+        optstrat, demandedEnergyDensityDrop, windowSize, ...
         dtstrat,...
         integral1DNsamples,...
         integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper ...
@@ -29,10 +29,10 @@ function ImageTriangulation(fname, ...
         perturbInit = 0;
 
         % MISC PARAMETERS
-        degree = 0;
+        degree = 1;
         forceGray = 0;
         maxIters = 500;
-        saveOut = 1; outputDir = 'output';
+        saveOut = 0; outputDir = 'output';
 
         % OPTIMIZATION PARAMETERS
         % optstrat = OptStrategy.none;
@@ -41,9 +41,7 @@ function ImageTriangulation(fname, ...
         % demandedEnergyDensityDrop = 0; windowSize = inf;
         demandedEnergyDensityDrop = 5; windowSize = 20; 
         % demandedEnergyDensityDrop = inf; windowSize = 1;
-        % areafactor = 1e6; % constant
-        areafactor = 1e5; % linear
-
+        
         % dtstrat = DtStrategy.none; 
         dtstrat = DtStrategy.constrained;
 
@@ -123,10 +121,18 @@ end
 % display initial state
 approx = Approximator(degree);
 approx0 = Approximator(0);
-[extra, energy, colors] = approx.computeEnergy(img, mesh, integral1DNsamples,salmap);
+[~, energy, colors] = approx.computeEnergy(img, mesh, integral1DNsamples,salmap);
+areaEnergy0 = getAreaEnergy(mesh);
+areafactor = abs(energy/(areaEnergy0*2));
+
 render(img,mesh,colors,approx,[],salmap);
 if saveOut
-    outpath = [outputDir '/']; mkdir(outpath);
+    outpath = [outputDir '/']; 
+    if exist(outpath,'dir')
+        display(['SKIPPED: ' outpath]);
+        return;
+    end
+    mkdir(outpath);
     v = VideoWriter([outpath 'mov.avi'],'Motion JPEG AVI'); v.Quality = 95; open(v);
 end
 
@@ -139,9 +145,8 @@ try
     gradnorms = zeros(maxIters,1);
     for i=1:maxIters
         %% save output
+        title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1));
         if saveOut
-            names = sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1);
-            title(names);
             Xs{i} = X; Ts{i} = T;
             A = getframe(gcf);
             writeVideo(v, A.cdata);
@@ -153,7 +158,7 @@ try
         %% compute new colors for updated mesh and display
         [extra, approxEnergy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
         [areaEnergy, areaGradient] = getAreaEnergy(mesh);
-        energy(i) = approxEnergy*areafactor + areaEnergy;
+        energy(i) = areaEnergy*areafactor + approxEnergy;
         totalGrad = areaGradient*areafactor + grad;
         gradnorms(i) = norm(totalGrad,'fro');
         
@@ -210,10 +215,9 @@ catch ex
     erStack = ex.stack;
 end
 render(img,mesh,colors,approx,[],[]);
-
+title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1));
+    
 if saveOut
-    names = sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1);
-    title(names);
     Xs{i} = X; Ts{i} = T;
     A = getframe(gcf);
     writeVideo(v, A.cdata);
@@ -229,4 +233,4 @@ subplot(3,1,3); hold all; title('dt'); plot(dts(1:i-1));
 
 
 
-
+end
