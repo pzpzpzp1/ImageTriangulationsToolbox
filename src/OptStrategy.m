@@ -1,5 +1,5 @@
 classdef OptStrategy
    enumeration
-      none, adaDelta, nonlinearCG
+      none, adaDelta, nonlinearCG, RMSProp
    end
 end

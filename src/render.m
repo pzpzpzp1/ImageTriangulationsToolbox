@@ -5,7 +5,7 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     if numel(pfh)==0
         f1 = gcf; 
         f1.Units = 'normalized';
-        f1.OuterPosition = [.1 .1 .9 .9];
+        f1.OuterPosition = [0 0 1 1];
         f1.Name = 'image triangulations interface';
         pfh = f1;
     end
@@ -25,6 +25,9 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     image(img); hold all; axis equal; axis off;
     renderMeshEdges(mesh,[.5 .5]);
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
+    if numel(salmap)~=0 && norm(salmap-1,'fro')~=0
+        boost = (salmap-1); imh = image(boost./max(boost(:))*256); imh.AlphaData = .3*boost/max(boost(:));
+    end
     
     ax2 = subplot_er(1,2,2);
     hold all; axis equal; axis off;
@@ -36,10 +39,7 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     ylim([min(X(:,2)) max(X(:,2))]);
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
     if numel(grad)~=0; quiver(X(:,1), X(:,2), grad(:,1), grad(:,2),'c'); end;
-    if numel(salmap)~=0 && norm(salmap-1,'fro')~=0
-        boost = (salmap-1); imh = image(boost./max(boost(:))*256); imh.AlphaData = .3*boost/max(boost(:));
-    end
-    
+        
     set(pfh,'Visible','on');
     hlink = linkprop([ax1,ax2],{'XLim','YLim','ZLim'}); 
     pfh.UserData = hlink;
