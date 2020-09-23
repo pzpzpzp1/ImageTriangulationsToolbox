@@ -1,4 +1,4 @@
-function ImageTriangulation(fname, ...
+function [X, T, colors] = ImageTriangulation(fname, ...
         salstrat, boostFactor,...
         initialHorizontalSampling, perturbInit,...
         degree, forceGray, maxIters, saveOut, outputDir, ... 
@@ -14,8 +14,8 @@ function ImageTriangulation(fname, ...
         % INPUT FILE
         % fname = 'images/gradient1.png';
         % fname = 'images/zebra.jpg';
-        % fname = 'images/person.jpg';
-        fname = 'images/apple.jpg';
+        fname = 'images/person.jpg';
+%         fname = 'images/apple.jpg';
         % fname = 'images/face2.jpg';
         % fname = 'images/face3.jpg';
 
@@ -150,91 +150,106 @@ if saveOut
 end
 
 %% simulation loop
-try
-    dt = .4; subdivcount = 1;
-    subdiviters = zeros(subdivmax,1);
-    dts = zeros(maxIters,1);
-    energy = zeros(maxIters,1);
-    gradnorms = zeros(maxIters,1);
-    for i=1:maxIters
-        %% save output
-        title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1)); drawnow;
-        if saveOut
-            Xs{i} = X; Ts{i} = T;
-            A = getframe(gcf);
-            writeVideo(v, A.cdata);
-        end
-        
-        % update mesh
-        mesh = MeshFromXT(X,T);
-        
-        %% compute new colors for updated mesh and display
-        [extra, approxEnergy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
-        [areaEnergy, areaGradient] = getAreaEnergy(mesh);
-        energy(i) = areaEnergy*areafactor + approxEnergy;
-        totalGrad = areaGradient*areafactor + grad;
-        gradnorms(i) = norm(totalGrad,'fro');
-        
-        %% obtain descent direction
-        if optstrat==OptStrategy.nonlinearCG
-            [descDir, beta] = getNonlinCGDescDir(totalGrad, nonlinearCG);
-        elseif optstrat==OptStrategy.adaDelta
-            [descDir, rates] = getAdadeltaDescDir(totalGrad, 1); 
-        elseif optstrat==OptStrategy.RMSProp
-            [descDir, rates] = getAdadeltaDescDir(totalGrad, 2); 
-        elseif optstrat==OptStrategy.none
-            descDir = -totalGrad;
-        end
-        
-        render(img,mesh,extra.colorsAlt,approx,[],salmap);
-        
-        %% check convergence and either subdivide or stop
-        % if energy hasn't dropped significantly since window iterations ago, then energy is 'flat'
-        if i > windowSize && energy(i-windowSize) - energy(i) < demandedEnergyDensityDrop*totalArea 
-            if subdivcount <= subdivmax
-                % do subdivision
-                subdiviters(subdivcount)=i;
-                subdivcount = subdivcount + 1;
-                subdivapprox = approx0;
-                if substrat == SubdivisionStrategy.edge
-                    % split mesh via edge cutting
-                    score = getEdgeSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
-                    edgeInds = drawEdgesToSplit(Nedges2subdivide, score);
-                    [X,T] = subdivideMeshEdges(mesh, edgeInds, img, edgeSplitResolution);
-                elseif substrat == SubdivisionStrategy.loop
-                    % split triangles via localized loop subdiv
-                    score = getTriSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
-                    [~,perm]=sort(score,'desc'); triInds = perm(1:min(Nedges2subdivide,mesh.nT));
-                    [X, T] = subdivideMeshTriangles(mesh, triInds);                    
-                end
-                demandedEnergyDensityDrop = demandedEnergyDensityDrop / subdivisionDamper;
-                continue;
-            else
-                display('Optimization finished!');
-                break;
-            end
-        end
-        
-        %% find a good dt to use
-        if dtstrat == DtStrategy.constrained
-            dt = 1/max(vecnorm(descDir,2,2));
-            while any(getTriangleAreas(X+dt*descDir,T)<0)
-                dt = dt / 2;
-            end
-        elseif dtstrat == DtStrategy.onepix
-            dt = 1/max(vecnorm(descDir,2,2));
-        elseif dtstrat == DtStrategy.none
-            if i==1; warning('constant dt is VERY not recommended.'); end
-        end
-        dts(i) = dt;
-        
-        %% update state
-        X = X + dt * descDir;
-        X = clipVerts(X,width,height);
+dt = .4; subdivcount = 1;
+subdiviters = zeros(subdivmax,1);
+dts = zeros(maxIters,1);
+energy = zeros(maxIters,1);
+gradnorms = zeros(maxIters,1);
+for i=1:maxIters
+    %% save output
+    title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1)); drawnow;
+    if saveOut
+        Xs{i} = X; Ts{i} = T;
+        A = getframe(gcf);
+        writeVideo(v, A.cdata);
     end
-catch ex
-    erStack = ex.stack;
+
+    % update mesh
+    mesh = MeshFromXT(X,T);
+
+    %% compute new colors for updated mesh and display
+    [extra, approxEnergy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
+    [areaEnergy, areaGradient] = getAreaEnergy(mesh);
+    energy(i) = areaEnergy*areafactor + approxEnergy;
+    totalGrad = areaGradient*areafactor + grad;
+    gradnorms(i) = norm(totalGrad,'fro');
+
+    %% obtain descent direction
+    if optstrat==OptStrategy.nonlinearCG
+        [descDir, beta] = getNonlinCGDescDir(totalGrad, nonlinearCG);
+    elseif optstrat==OptStrategy.adaDelta
+        [descDir, rates] = getAdadeltaDescDir(totalGrad, 1); 
+    elseif optstrat==OptStrategy.RMSProp
+        [descDir, rates] = getAdadeltaDescDir(totalGrad, 2); 
+    elseif optstrat==OptStrategy.none
+        descDir = -totalGrad;
+    end
+
+    render(img,mesh,extra.colorsAlt,approx,[],salmap);
+
+    %% check convergence and either subdivide or stop
+    % if energy hasn't dropped significantly since window iterations ago, then energy is 'flat'
+    if i > windowSize && energy(i-windowSize) - energy(i) < demandedEnergyDensityDrop*totalArea 
+        if subdivcount <= subdivmax
+            %% handle bad sliver triangles
+            badTriInds = getTrisToCollapse(mesh,extra.perTriangleRGBError,img);
+            if numel(badTriInds)~=0
+                %{
+                figure; image(img); hold all; axis equal; 
+                patch('faces',T,'vertices',X,'facecolor','green','facealpha',.1)
+                patch('faces',T(badTriInds,:),'vertices',X,'facecolor','none','facealpha',1,'edgecolor','red','linewidth',2)
+                %}
+                [mesh, reducedInds] = collapseSliverTriangles(mesh, badTriInds);
+                if numel(reducedInds)~=0
+                    display('sliver collapse created inversion. retrying.');
+                    [mesh, furtherreducedInds] = collapseSliverTriangles(mesh, reducedInds);
+                    if numel(furtherreducedInds)~=0
+                        warning('sliver collapse created inversion. retry failed. skipping collapse.');
+                    end
+                end
+            end        
+
+            %% do subdivision
+            subdiviters(subdivcount)=i;
+            subdivcount = subdivcount + 1;
+            subdivapprox = approx0;
+            if substrat == SubdivisionStrategy.edge
+                % split mesh via edge cutting
+                score = getEdgeSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
+                edgeInds = drawEdgesToSplit(Nedges2subdivide, score);
+                [X,T] = subdivideMeshEdges(mesh, edgeInds, img, edgeSplitResolution);
+            elseif substrat == SubdivisionStrategy.loop
+                % split triangles via localized loop subdiv
+                score = getTriSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
+                [~,perm]=sort(score,'desc'); triInds = perm(1:min(Nedges2subdivide,mesh.nT));
+                [X, T] = subdivideMeshTriangles(mesh, triInds);                    
+            end
+            demandedEnergyDensityDrop = demandedEnergyDensityDrop / subdivisionDamper;
+            continue;
+        else
+            display('Optimization finished!');
+            break;
+        end
+    end
+
+    %% find a good dt to use
+    if dtstrat == DtStrategy.constrained
+        dt = 1/max(vecnorm(descDir,2,2));
+        while any(getTriangleAreas(X+dt*descDir,T)<0)
+            dt = dt / 2;
+        end
+    elseif dtstrat == DtStrategy.onepix
+        dt = 1/max(vecnorm(descDir,2,2));
+    elseif dtstrat == DtStrategy.none
+        if i==1; warning('constant dt is VERY not recommended.'); end
+    end
+    dts(i) = dt;
+
+    %% update state
+    X = X + dt * descDir;
+    X = clipVerts(X,width,height);
 end
+    
 render(img,mesh,colors,approx,[],[]);
 title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1));
     

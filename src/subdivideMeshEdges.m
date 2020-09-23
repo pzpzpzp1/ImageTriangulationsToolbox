@@ -21,6 +21,7 @@ function [Xnew, Tnew, dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img,
     if nargin >= 3
         % This doesn't actually seem that effective. Oh well, it can't hurt.
         edgeWs = linspace(1/4,3/4,n1D);
+        
 %         edgeWs = linspace(0,1,n1D);
         
         dw = (edgeWs(2)-edgeWs(1))/2;
@@ -39,14 +40,14 @@ function [Xnew, Tnew, dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img,
     v123 = T(mesh.edges2triangles(edgeInds,1),:);
     v234 = T(mesh.edges2triangles(edgeInds,2),:);
     v23 = mesh.edges(edgeInds,:);
-    [II,JJ] = find(~squeeze(sum(reshape(v123,ne ,1,3) == v23,2)));
+    [II,JJ] = find(~permute(sum(reshape(v123,ne ,1,3) == v23,2),[1 3 2]));
     [~,perm] = sort(II);
     v1 = v123(sub2ind(size(v123),[1:ne ]',JJ(perm)));
     ip1 = mod(JJ(perm)+1,3); ip1(ip1==0)=3;
     ip2 = mod(JJ(perm)+2,3); ip2(ip2==0)=3;
     v2 = v123(sub2ind(size(v123),[1:ne ]',ip1));
     v3 = v123(sub2ind(size(v123),[1:ne ]',ip2));
-    [II,JJ] = find(~squeeze(sum(reshape(v234,ne ,1,3) == v23,2)));
+    [II,JJ] = find(~permute(sum(reshape(v234,ne ,1,3) == v23,2),[1 3 2]));
     [~,perm] = sort(II);
     v4 = v234(sub2ind(size(v234),[1:ne ]',JJ(perm)));
     v5 = ((nX+1):(nX+ne))';

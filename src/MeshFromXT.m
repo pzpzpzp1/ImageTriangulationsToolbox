@@ -47,11 +47,14 @@ function mesh = MeshFromXT(X,T,isTriangleSoup)
     edgetangs = edgetangs./vecnorm(edgetangs,2,2);
     isXEdge = abs(edgetangs*[0 1]')<.000001;
     isYEdge = abs(edgetangs*[1 0]')<.000001;
+    mesh.isXEdge = isXEdge;
+    mesh.isYEdge = isYEdge;
     XvertInds = unique(mesh.edges(isBoundaryEdge & isXEdge,:));
     YvertInds = unique(mesh.edges(isBoundaryEdge & isYEdge,:));
     mesh.isXvert = false(size(X,1),1); mesh.isXvert(XvertInds) = true;
     mesh.isYvert = false(size(X,1),1); mesh.isYvert(YvertInds) = true;
     mesh.isInterior = ~mesh.isXvert & ~mesh.isYvert;
+    mesh.isBoundaryTriangle = sum(~mesh.isInterior(mesh.T),2)~=0;
     
     %% compute dA_dt
     TX = permute(reshape(X(T',:),3,[],2),[2 3 1]);

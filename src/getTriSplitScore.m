@@ -3,7 +3,7 @@
 function score = getTriSplitScore(mesh,img,approx,integral1DNsamples, salmap)
 
 % build triangle soup of all possible divisions
-esMesh = buildTriSplitMesh(mesh)
+esMesh = buildTriSplitMesh(mesh);
 % compute energy per triangle of the soup
 esExtra = approx.computeEnergy(img, esMesh, integral1DNsamples, salmap);
 % compute the no split energy. this may be redundant with previous computation, but is quite fast and makes the function more standalone.
