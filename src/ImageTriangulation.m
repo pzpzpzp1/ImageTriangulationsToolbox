@@ -12,12 +12,13 @@ function [X, T, colors] = ImageTriangulation(fname, ...
     if nargin == 0
         %% input args
         % INPUT FILE
-        % fname = 'images/gradient1.png';
-        % fname = 'images/zebra.jpg';
-        fname = 'images/person.jpg';
-%         fname = 'images/apple.jpg';
-        % fname = 'images/face2.jpg';
-        % fname = 'images/face3.jpg';
+%         fname = 'images/gradient1.png';
+%         fname = 'images/zebra.jpg';
+%         fname = 'images/person.jpg';
+        fname = 'images/apple.jpg';
+%         fname = 'images/face2.jpg';
+%         fname = 'images/face3.jpg';
+%         fname = 'images/eye.jpg';
 
         % SALIENCY MAP PARAMETERS
         % salstrat = SaliencyStrategy.none;
@@ -28,8 +29,8 @@ function [X, T, colors] = ImageTriangulation(fname, ...
         % INITIAL MESH DETAILS
         initialHorizontalSampling = 10;
         perturbInit = 0;
-%         iMesh = initialMesh.hexagonal;
-        iMesh = initialMesh.trim;
+        iMesh = initialMesh.hexagonal;
+%         iMesh = initialMesh.trim;
 
         % MISC PARAMETERS
         degree = 0;
@@ -41,7 +42,7 @@ function [X, T, colors] = ImageTriangulation(fname, ...
         % optstrat = OptStrategy.none;
         % optstrat = OptStrategy.adaDelta; 
         optstrat = OptStrategy.RMSProp; 
-        % demandedEnergyDensityDrop = 0; windowSize = inf;
+%         demandedEnergyDensityDrop = 0; windowSize = inf;
         demandedEnergyDensityDrop = 5; windowSize = 10; 
         % demandedEnergyDensityDrop = inf; windowSize = 1;
         
@@ -135,7 +136,7 @@ end
 approx = Approximator(degree);
 approx0 = Approximator(0);
 [~, energy, colors] = approx.computeEnergy(img, mesh, integral1DNsamples,salmap);
-areaEnergy0 = getAreaEnergy(mesh);
+areaEnergy0 = getAreaEnergy(mesh, salmap);
 areafactor = abs(energy/(areaEnergy0*2));
 
 render(img,mesh,colors,approx,[],salmap);
@@ -169,9 +170,10 @@ for i=1:maxIters
 
     %% compute new colors for updated mesh and display
     [extra, approxEnergy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
-    [areaEnergy, areaGradient] = getAreaEnergy(mesh);
+    [areaEnergy, areaGradient] = getAreaEnergy(mesh, salmap);
     energy(i) = areaEnergy*areafactor + approxEnergy;
     totalGrad = areaGradient*areafactor + grad;
+%     totalGrad = areaGradient;
     gradnorms(i) = norm(totalGrad,'fro');
 
     %% obtain descent direction
