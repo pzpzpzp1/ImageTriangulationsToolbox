@@ -1,8 +1,8 @@
 close all; clear all;
 
-initialHorizontalSamplings = 5:5:25;
+initialHorizontalSamplings = 10:5:25;
 degree = 0;
-maxIters = 500;
+maxIters = 300;
 saveOut = 1; 
 integral1DNsamples = 15;
 demandedEnergyDensityDrop = 0; windowSize = inf; 
@@ -34,7 +34,7 @@ for i=1:numel(files)
             OptStrategy.RMSProp, demandedEnergyDensityDrop, windowSize, ...
             DtStrategy.constrained,...
             integral1DNsamples,...
-            integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, ...
+            integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, SubdivisionStrategy.edge, ...
             imesh);
     end
 end

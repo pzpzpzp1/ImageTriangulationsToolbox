@@ -5,7 +5,7 @@ function ImageTriangulation(fname, ...
         optstrat, demandedEnergyDensityDrop, windowSize, ...
         dtstrat,...
         integral1DNsamples,...
-        integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, ...
+        integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, substrat, ...
         iMesh...
         )
     
@@ -26,7 +26,7 @@ function ImageTriangulation(fname, ...
         boostFactor = 10;
 
         % INITIAL MESH DETAILS
-        initialHorizontalSampling = 25;
+        initialHorizontalSampling = 10;
         perturbInit = 0;
 %         iMesh = initialMesh.hexagonal;
         iMesh = initialMesh.trim;
@@ -42,7 +42,7 @@ function ImageTriangulation(fname, ...
         % optstrat = OptStrategy.adaDelta; 
         optstrat = OptStrategy.RMSProp; 
         % demandedEnergyDensityDrop = 0; windowSize = inf;
-        demandedEnergyDensityDrop = 5; windowSize = 200; 
+        demandedEnergyDensityDrop = 5; windowSize = 10; 
         % demandedEnergyDensityDrop = inf; windowSize = 1;
         
         % dtstrat = DtStrategy.none; 
@@ -57,6 +57,7 @@ function ImageTriangulation(fname, ...
         Nedges2subdivide = 20;
         subdivmax = 10; % times to do subdivision
         subdivisionDamper = 5;
+        substrat = SubdivisionStrategy.loop;
         
     end
 %% start processing
@@ -157,7 +158,7 @@ try
     gradnorms = zeros(maxIters,1);
     for i=1:maxIters
         %% save output
-        title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1));
+        title(sprintf('(iter:%d) (subdiviters:%d)', i, subdivcount-1)); drawnow;
         if saveOut
             Xs{i} = X; Ts{i} = T;
             A = getframe(gcf);
@@ -194,10 +195,18 @@ try
                 % do subdivision
                 subdiviters(subdivcount)=i;
                 subdivcount = subdivcount + 1;
-                score = getEdgeSplitScore(mesh, img, approx0, integral1DNsamplesSubdiv, salmap);
-                
-                edgeInds = drawEdgesToSplit(Nedges2subdivide, score);
-                [X,T,dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img, edgeSplitResolution);
+                subdivapprox = approx0;
+                if substrat == SubdivisionStrategy.edge
+                    % split mesh via edge cutting
+                    score = getEdgeSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
+                    edgeInds = drawEdgesToSplit(Nedges2subdivide, score);
+                    [X,T] = subdivideMeshEdges(mesh, edgeInds, img, edgeSplitResolution);
+                elseif substrat == SubdivisionStrategy.loop
+                    % split triangles via localized loop subdiv
+                    score = getTriSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
+                    [~,perm]=sort(score,'desc'); triInds = perm(1:min(Nedges2subdivide,mesh.nT));
+                    [X, T] = subdivideMeshTriangles(mesh, triInds);                    
+                end
                 demandedEnergyDensityDrop = demandedEnergyDensityDrop / subdivisionDamper;
                 continue;
             else
