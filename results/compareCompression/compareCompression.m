@@ -7,7 +7,7 @@ for i=1:numel(files)
     [~,name,ext]=fileparts(files(i).name);
     
     degree = 0; sal = 1;
-    innerfolder = ['../../output_salientarea_slivercollapse_loopsplit/' name '_init_15_deg_0_sal_1'];
+    innerfolder = ['../../output_salientarea_slivercollapse_loopsplit/' name '_init_25_deg_0_sal_1'];
     
     try
         load([innerfolder '/XTs.mat']);
@@ -32,10 +32,10 @@ for i=1:numel(files)
             xlim([0 size(img,2)]); ylim([0 size(img,1)]);
             f1.Units = 'normalized'; f1.Position = [0 0 1 1];
 
-            outpicname = ['../../results/compareCompression/' name '_' num2str(j) '.jpg'];
+            outpicname = ['../../results/compareCompression/' name '_' num2str(j) '_2.jpg'];
             exportgraphics(f1,outpicname,'Resolution',180);
 
-            outpicname = ['../../results/compareCompression/' name '_' num2str(j) '.txt'];
+            outpicname = ['../../results/compareCompression/' name '_' num2str(j) '_2.txt'];
             SaveConstantTriangulationBinary(outpicname, X, T, colors);
 
             close(f1);
