@@ -4,6 +4,14 @@ for i=2:numel(files)
     fname = files(i).name;
     fullname = [files(i).folder '\' fname];
     img = imread(fullname);
-    boost = getBoostMap(img);
-    imwrite(boost, fname);
+    prevsal = [];
+    if exist(fname,'file')
+        prevsal = imread(fname);
+    end
+    
+    boost = getBoostMap(img, prevsal);
+    
+    if norm(boost,'fro')~=0
+        imwrite(boost, fname);
+    end
 end

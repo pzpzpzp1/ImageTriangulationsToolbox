@@ -147,7 +147,7 @@ if saveOut
         return;
     end
     mkdir(outpath);
-    v = VideoWriter([outpath 'mov.avi'],'Motion JPEG AVI'); v.Quality = 95; open(v);
+    v = VideoWriter([outpath 'mov.avi'],'Motion JPEG AVI'); v.Quality = 80; open(v);
 end
 
 %% simulation loop

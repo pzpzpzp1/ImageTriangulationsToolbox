@@ -2,3 +2,5 @@
 *.mov
 *.mat
 *.avi
+/results/compareCompression/*.jpg
+/results/compareCompression/*.txt

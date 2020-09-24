@@ -1,7 +1,13 @@
-function boost = getBoostMap(img)
+function boost = getBoostMap(img, prevsal)
     f1 = figure('units','normalized'); image(img); 
     hold all;     axis equal;    
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
+    if numel(prevsal)~=0
+        prevsal = prevsal/max(prevsal(:));
+        imh = image(prevsal*255);
+        imh.AlphaData = prevsal*255/2;
+    end
+    
     
     BL = [0 0];
 %     c1 = uicontrol('style','pushbutton','position',[BL(1) BL(2) 100 20],'string', 'Draw Polygon','callback',@drawpolygoncallback);
@@ -32,12 +38,9 @@ function boost = getBoostMap(img)
         boost(ininds) = boost(ininds) + 1;
     end
     
-    
-    
 %     figure; 
 %     image(img); hold all; axis equal;
 %     imh = imagesc(boost); imh.AlphaData = .5;
-    
     
 end
 

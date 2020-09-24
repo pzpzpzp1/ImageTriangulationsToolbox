@@ -11,7 +11,6 @@ for i=1:numel(files)
     
     imwrite(bigMap, files(i).name);
     
-    
     fname = [files(i).folder '/' files(i).name];
     im = imread(fname);
     clf; image(repmat(rgb2gray(im),1,1,3)); hold all; axis equal;

@@ -63,7 +63,7 @@ function [esmesh, reducedInds] =  collapseSliverTriangles(mesh, badTriInds)
     [II,JJ] = find(~permute(sum(reshape(v234, numel(boundaryLongEdge) ,1,3) == v23,2),[1 3 2]));
     [~,perm] = sort(II);
     v4 = v234(sub2ind(size(v234),[1:ne]',JJ(perm)));
-    triangles2remove = [triangles2remove; unique(mesh.edges2triangles(boundaryLongEdge,:))];
+    triangles2remove = unique([triangles2remove; reshape(unique(mesh.edges2triangles(boundaryLongEdge,:)),[],1)]);
     Tnew = [T; v1 v4 v3; v1 v2 v4];
     v1inds = any((T(boundaryBadTri,:) - v1)==0,2);
     v4inds = any((T(boundaryBadTri,:) - v4)==0,2);
@@ -74,7 +74,8 @@ function [esmesh, reducedInds] =  collapseSliverTriangles(mesh, badTriInds)
     Tnew(triangles2remove,:)=[];
     
     %% check for inversions from collapse
-    flipped = find(getTriangleAreas(Xnew,Tnew)<0);
+    % the epsilon area buffer is needed becasue in trisplit step, areas are cut even further. sometimes that fails at floating precision and turns non inverted triangles into inverted ones.
+    flipped = find(getTriangleAreas(Xnew,Tnew)<=1e-9); 
     reducedInds = [];
     if numel(flipped)==0;
         esmesh = MeshFromXT(Xnew, Tnew);
