@@ -63,5 +63,15 @@ function [Xnew, Tnew, dividedEdgeInds] = subdivideMeshEdges(mesh, edgeInds, img,
     patch('vertices',Xnew,'faces',Tnew,'facecolor','green','facealpha',.1);
     subplot(1,2,1); image(img); hold all; axis equal; axis off;
     patch('vertices',mesh.X,'faces',mesh.T,'facecolor','green','facealpha',0,'edgecolor','c');
+
+    figure; 
+    ax1=subplot(1,2,2); hold all; axis equal; axis off;
+    patch('vertices',mesh.X,'faces',mesh.edges(dividedEdgeInds,[1 2 1]),'facecolor','none','linewidth',2,'edgecolor','c');
+    patch('vertices',Xnew,'faces',Tnew,'facecolor','blue','facealpha',.1);
+    patch('vertices',mesh.X,'faces',mesh.T(unique(mesh.edges2triangles(dividedEdgeInds,:)),:),'facecolor','red','facealpha',.5);
+    ax2=subplot(1,2,1); hold all; axis equal; axis off;
+    patch('vertices',mesh.X,'faces',mesh.T,'facecolor','blue','facealpha',.1);
+    patch('vertices',mesh.X,'faces',mesh.edges(dividedEdgeInds,[1 2 1]),'facecolor','none','linewidth',2,'edgecolor','c');  
+    ax1.Clipping='off';ax2.Clipping='off';
     %}
 end

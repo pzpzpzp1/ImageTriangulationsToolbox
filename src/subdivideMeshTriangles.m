@@ -1,10 +1,12 @@
 function [Xnew, Tnew] = subdivideMeshTriangles(mesh, triInds)
     if nargin == 0
-        [X,T] = initialGridMesh(10, 10, 7, 1);
+        [X,T] = initialGridMesh(10, 10, 5, 1);
         mesh = MeshFromXT(X,T);
-        triInds = randsample(1:mesh.nT, 10)';
+        triInds0 = randsample(1:mesh.nT, 5)';
+        triInds = triInds0;
     end
     X = mesh.X; T = mesh.T; nT = size(T,1); nX = size(X,1);
+    triInds0 = triInds;
     
     alsosplit = true;
     while any(alsosplit)
@@ -51,13 +53,18 @@ function [Xnew, Tnew] = subdivideMeshTriangles(mesh, triInds)
     Tnew = [T0new; T3new; T1new1; T1new2; T1new3;];
     
     %{
-    figure; hold all; axis equal; 
-    patch('faces',Tnew,'vertices',Xnew,'facecolor','blue','facealpha',.5);    
-    patch('faces',T0new,'vertices',Xnew,'facecolor','green','facealpha',.5);
+    figure; 
+    subplot(1,2,1); hold all; axis equal; axis off; set(gcf,'color','w');
+    patch('faces',T,'vertices',X,'facecolor','blue','facealpha',.1);
+    patch('faces',T(triInds0,:),'vertices',X,'facecolor','red','facealpha',.5);
+    
+    subplot(1,2,2); hold all; axis equal; axis off; 
+    patch('faces',Tnew,'vertices',Xnew,'facecolor','blue','facealpha',.1);    
+    % patch('faces',T0new,'vertices',Xnew,'facecolor','green','facealpha',.5);
     patch('faces',T3new,'vertices',Xnew,'facecolor','red','facealpha',.5);
-    patch('faces',T1new1,'vertices',Xnew,'facecolor','blue','facealpha',.5);
-    patch('faces',T1new2,'vertices',Xnew,'facecolor','blue','facealpha',.5);
-    patch('faces',T1new3,'vertices',Xnew,'facecolor','blue','facealpha',.5);
+    patch('faces',T1new1,'vertices',Xnew,'facecolor','yellow','facealpha',.3);
+    patch('faces',T1new2,'vertices',Xnew,'facecolor','yellow','facealpha',.3);
+    patch('faces',T1new3,'vertices',Xnew,'facecolor','yellow','facealpha',.3);
     assert(all(getTriangleAreas(Xnew,Tnew) > 0))
     %}
 end

@@ -1,4 +1,8 @@
 function [extra, energy, colors, gradient] = constantComputeEnergy(img, mesh, integral1DNsamples, salmap)
+    if numel(salmap)==0
+        salmap = img(:,:,1)*0+1;
+    end
+    
     extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords

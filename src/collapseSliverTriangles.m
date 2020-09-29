@@ -87,7 +87,7 @@ function [esmesh, reducedInds] =  collapseSliverTriangles(mesh, badTriInds)
     
     %{
     % before
-    figure; 
+    figure; image(img)
     ax1=subplot(1,2,1);
     axis equal; hold all;
     patch('faces',T,'vertices',X,'facecolor','green','facealpha',.1)

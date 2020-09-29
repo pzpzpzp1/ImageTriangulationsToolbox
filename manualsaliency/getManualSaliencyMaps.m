@@ -1,11 +1,11 @@
 files = dir('../images/*.jpg');
 
-for i=2:numel(files)
+for i=1:numel(files)
     fname = files(i).name;
     fullname = [files(i).folder '\' fname];
     img = imread(fullname);
     prevsal = [];
-    if exist(fname,'file')
+    if exist(['./' fname],'file')
         prevsal = imread(fname);
     end
     

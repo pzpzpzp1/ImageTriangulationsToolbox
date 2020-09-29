@@ -23,12 +23,20 @@ end
 
  %% sanity check visualization
     %{
+    onelayerin = ~any(abs(cachedWs{n}) < (1-1)/(n-1) + eps,2); % 1 layer interior
     X = [0 0;1 0;0 1;]; T=[1 2 3];
     samplePoints1 = ws(interiorInds,:)*X;
     samplePoints2 = ws(~interiorInds,:)*X;
+    samplePoints3 = ws(~onelayerin,:)*X;
+
     figure; hold all; axis equal;
-    scatter(samplePoints2(:,1),samplePoints2(:,2),20,'r','filled')
-    scatter(samplePoints1(:,1),samplePoints1(:,2),30,'b')
+    plot([0 1 0 0],[0 0 1 0],'k','linewidth',2);
+    scatter(samplePoints2(:,1),samplePoints2(:,2),30,'r','filled')
+    scatter(samplePoints1(:,1),samplePoints1(:,2),30,'r','filled')
+    scatter(samplePoints3(:,1),samplePoints3(:,2),30,'g','filled')
+ 
+    axis off; set(gcf,'color','w'); 
+    
     %}
  
     %{

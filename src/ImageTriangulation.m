@@ -15,36 +15,40 @@ function [X, T, colors] = ImageTriangulation(fname, ...
 %         fname = 'images/gradient1.png';
 %         fname = 'images/zebra.jpg';
 %         fname = 'images/person.jpg';
-        fname = 'images/apple.jpg';
+%         fname = 'images/Jcat.jpg';
+%         fname = 'images/Jflower.jpg';
+%         fname = 'images/fish.jpg';
+        fname = 'images/geyser.jpg';
+%         fname = 'images/apple.jpg';
 %         fname = 'images/face2.jpg';
 %         fname = 'images/face3.jpg';
 %         fname = 'images/eye.jpg';
 
         % SALIENCY MAP PARAMETERS
-        % salstrat = SaliencyStrategy.none;
-        salstrat = SaliencyStrategy.manual;
+        salstrat = SaliencyStrategy.none;
+%         salstrat = SaliencyStrategy.manual;
         % salstrat = SaliencyStrategy.edge; edgediffusion = 5;
         boostFactor = 10;
 
         % INITIAL MESH DETAILS
-        initialHorizontalSampling = 10;
+        initialHorizontalSampling = 15;
         perturbInit = 0;
         iMesh = initialMesh.hexagonal;
 %         iMesh = initialMesh.trim;
 
         % MISC PARAMETERS
-        degree = 0;
+        degree = 1;
         forceGray = 0;
         maxIters = 500;
-        saveOut = 0; outputDir = 'output';
+        saveOut = 1; outputDir = 'outputcache';
 
         % OPTIMIZATION PARAMETERS
-        % optstrat = OptStrategy.none;
+%         optstrat = OptStrategy.none;
         % optstrat = OptStrategy.adaDelta; 
         optstrat = OptStrategy.RMSProp; 
 %         demandedEnergyDensityDrop = 0; windowSize = inf;
         demandedEnergyDensityDrop = 5; windowSize = 10; 
-        % demandedEnergyDensityDrop = inf; windowSize = 1;
+%         demandedEnergyDensityDrop = inf; windowSize = 1;
         
         % dtstrat = DtStrategy.none; 
         dtstrat = DtStrategy.constrained;
@@ -59,6 +63,7 @@ function [X, T, colors] = ImageTriangulation(fname, ...
         subdivmax = 10; % times to do subdivision
         subdivisionDamper = 5;
         substrat = SubdivisionStrategy.loop;
+%         substrat = SubdivisionStrategy.edge;
         
     end
 %% start processing
@@ -187,7 +192,12 @@ for i=1:maxIters
         descDir = -totalGrad;
     end
 
-    render(img,mesh,extra.colorsAlt,approx,[],salmap);
+%     render(img,mesh,extra.colorsAlt,approx,descDir,salmap);
+    if degree == 0
+        render(img,mesh,extra.colorsAlt,approx,[],salmap);
+    else
+        render(img,mesh,colors,approx,[],salmap);
+    end
 
     %% check convergence and either subdivide or stop
     % if energy hasn't dropped significantly since window iterations ago, then energy is 'flat'
@@ -197,10 +207,18 @@ for i=1:maxIters
             badTriInds = getTrisToCollapse(mesh,extra.perTriangleRGBError,img);
             if numel(badTriInds)~=0
                 %{
-                figure; image(img); hold all; axis equal; 
-                patch('faces',T,'vertices',X,'facecolor','green','facealpha',.1)
-                patch('faces',T(badTriInds,:),'vertices',X,'facecolor','none','facealpha',1,'edgecolor','red','linewidth',2)
+                figure; set(gcf,'color','w');
+                ax1 = subplot(1,1,1); image(img); hold all; axis equal; axis off; 
+                patch('faces',preMesh.T,'vertices',preMesh.X,'facecolor','none','facealpha',0,'edgecolor','cyan','linewidth',1.5)
+                patch('faces',T(badTriInds,:),'vertices',X,'facecolor','none','facealpha',1,'edgecolor','red','linewidth',1.5)
+
+                figure; set(gcf,'color','w');
+                ax2 = subplot(1,1,1); image(img); hold all; axis equal; axis off; 
+                patch('faces',mesh.T,'vertices',mesh.X,'facecolor','none','facealpha',0,'edgecolor','cyan','linewidth',1.5)
+                
+                linkprop([ax1 ax2],{'xlim','ylim','zlim'});
                 %}
+                preMesh = mesh;
                 [mesh, reducedInds] = collapseSliverTriangles(mesh, badTriInds);
                 if numel(reducedInds)~=0
                     display('sliver collapse created inversion. retrying.');
@@ -215,6 +233,9 @@ for i=1:maxIters
             subdiviters(subdivcount)=i;
             subdivcount = subdivcount + 1;
             subdivapprox = approx0;
+            if all(salmap(:)==1)
+                subdivapprox = approx;
+            end
             if substrat == SubdivisionStrategy.edge
                 % split mesh via edge cutting
                 score = getEdgeSplitScore(mesh, img, subdivapprox, integral1DNsamplesSubdiv, salmap);
@@ -263,7 +284,7 @@ if saveOut
     save([outpath 'XTs.mat'],'Xs','Ts')
 end
 
-figure; 
+figure; set(gcf,'color','w');
 subplot(3,1,1); hold all; title('energy'); plot(energy(1:i-1)); 
 for j=1:subdivmax; xline(subdiviters(j)); end
 subplot(3,1,2); hold all; title('gradnorm'); plot(gradnorms(1:i-1)); 

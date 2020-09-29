@@ -28,8 +28,8 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     hold all; axis equal; axis off;
     set(gca, 'YDir','reverse');
     approx.render(X, T, colors);
-    scatter(X(mesh.isXvert,1),X(mesh.isXvert,2),'r.');
-    scatter(X(mesh.isYvert,1),X(mesh.isYvert,2),'b.');
+%     scatter(X(mesh.isXvert,1),X(mesh.isXvert,2),'r.');
+%     scatter(X(mesh.isYvert,1),X(mesh.isYvert,2),'b.');
     xlim([min(X(:,1)) max(X(:,1))]);
     ylim([min(X(:,2)) max(X(:,2))]);
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
