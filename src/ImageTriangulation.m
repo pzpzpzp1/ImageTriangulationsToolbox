@@ -1,4 +1,4 @@
-function [X, T, colors] = ImageTriangulation(fname, ...
+function [X, T, colors, timedata] = ImageTriangulation(fname, ...
         salstrat, boostFactor,...
         initialHorizontalSampling, perturbInit,...
         degree, forceGray, maxIters, saveOut, outputDir, ... 
@@ -8,7 +8,11 @@ function [X, T, colors] = ImageTriangulation(fname, ...
         integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, substrat, ...
         iMesh...
         )
-    
+    timedata.energycomptime = [];
+    timedata.nXs = [];
+    timedata.nTs = [];
+    timedata.subdivtime = [];
+    functionstarttime = tic;
     if nargin == 0
         %% input args
         % INPUT FILE
@@ -18,11 +22,11 @@ function [X, T, colors] = ImageTriangulation(fname, ...
 %         fname = 'images/Jcat.jpg';
 %         fname = 'images/Jflower.jpg';
 %         fname = 'images/fish.jpg';
-        fname = 'images/geyser.jpg';
+%         fname = 'images/geyser.jpg';
 %         fname = 'images/apple.jpg';
 %         fname = 'images/face2.jpg';
 %         fname = 'images/face3.jpg';
-%         fname = 'images/eye.jpg';
+        fname = 'images/eye.jpg';
 
         % SALIENCY MAP PARAMETERS
         salstrat = SaliencyStrategy.none;
@@ -37,7 +41,7 @@ function [X, T, colors] = ImageTriangulation(fname, ...
 %         iMesh = initialMesh.trim;
 
         % MISC PARAMETERS
-        degree = 1;
+        degree = 0;
         forceGray = 0;
         maxIters = 500;
         saveOut = 1; outputDir = 'outputcache';
@@ -173,6 +177,7 @@ for i=1:maxIters
     % update mesh
     mesh = MeshFromXT(X,T);
 
+    energycomptimeStart = tic;
     %% compute new colors for updated mesh and display
     [extra, approxEnergy, colors, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
     [areaEnergy, areaGradient] = getAreaEnergy(mesh, salmap);
@@ -180,7 +185,11 @@ for i=1:maxIters
     totalGrad = areaGradient*areafactor + grad;
 %     totalGrad = areaGradient;
     gradnorms(i) = norm(totalGrad,'fro');
-
+    timedata.energycomptime(i) = toc(energycomptimeStart);
+    timedata.nXs(i) = size(X,1);
+    timedata.nTs(i) = size(T,1);
+    
+    
     %% obtain descent direction
     if optstrat==OptStrategy.nonlinearCG
         [descDir, beta] = getNonlinCGDescDir(totalGrad, nonlinearCG);
@@ -203,6 +212,7 @@ for i=1:maxIters
     % if energy hasn't dropped significantly since window iterations ago, then energy is 'flat'
     if i > windowSize && energy(i-windowSize) - energy(i) < demandedEnergyDensityDrop*totalArea 
         if subdivcount <= subdivmax
+            subdivtimestart = tic;
             %% handle bad sliver triangles
             badTriInds = getTrisToCollapse(mesh,extra.perTriangleRGBError,img);
             if numel(badTriInds)~=0
@@ -248,6 +258,7 @@ for i=1:maxIters
                 [X, T] = subdivideMeshTriangles(mesh, triInds);                    
             end
             demandedEnergyDensityDrop = demandedEnergyDensityDrop / subdivisionDamper;
+            timedata.subdivtime(i) = toc(subdivtimestart);
             continue;
         else
             display('Optimization finished!');
@@ -282,6 +293,7 @@ if saveOut
     writeVideo(v, A.cdata);
     close(v);
     save([outpath 'XTs.mat'],'Xs','Ts')
+    save([outpath 'timedata.mat'],'timedata')
 end
 
 figure; set(gcf,'color','w');
@@ -290,6 +302,6 @@ for j=1:subdivmax; xline(subdiviters(j)); end
 subplot(3,1,2); hold all; title('gradnorm'); plot(gradnorms(1:i-1)); 
 subplot(3,1,3); hold all; title('dt'); plot(dts(1:i-1)); 
 
-
+timedata.totalTime = toc(functionstarttime);
 
 end
