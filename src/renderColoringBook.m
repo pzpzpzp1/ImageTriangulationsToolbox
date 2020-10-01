@@ -1,5 +1,5 @@
-function figs = renderColoringBook(img, mesh, colors)
-    Ks = [5 15 50];
+function figs = renderColoringBook(img, mesh, colors, Ks)
+    
     X = mesh.X; T = mesh.T; nX = size(X,1); nT = size(T,1);
     triCenters = (X(T(:,1),:)+X(T(:,2),:)+X(T(:,3),:))/3;
     

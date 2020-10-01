@@ -41,7 +41,7 @@ function [X, T, colors, timedata] = ImageTriangulation(fname, ...
 %         iMesh = initialMesh.trim;
 
         % MISC PARAMETERS
-        degree = 0;
+        degree = 1;
         forceGray = 0;
         maxIters = 500;
         saveOut = 1; outputDir = 'outputcache';
@@ -305,3 +305,4 @@ subplot(3,1,3); hold all; title('dt'); plot(dts(1:i-1));
 timedata.totalTime = toc(functionstarttime);
 
 end
+%[1 1 635.2000 219.2000]
