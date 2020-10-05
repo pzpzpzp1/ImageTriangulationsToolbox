@@ -3,7 +3,7 @@ clear all; close all;
 f = figure; hold all; set(gcf,'color','w');  
 f.Position = [197.0000  399.4000  450.4000  299.2000];
 title('mesh topology update');
-xlabel('number of triangles'); ylabel('seconds')
+xlabel('number of triangles'); ylabel('seconds per iteration')
 x1s = []; y1s = [];
 x2s = []; y2s = [];
 for i=1:5
@@ -28,7 +28,7 @@ exportgraphics(f,'topruntime.pdf')
 f = figure; hold all; set(gcf,'color','w')
 f.Position = [197.0000  399.4000  450.4000  299.2000];
 title('mesh geometry update');
-xlabel('number of triangles'); ylabel('seconds')
+xlabel('number of triangles'); ylabel('seconds per iteration')
 x1s = []; y1s = [];
 x2s = []; y2s = [];
 for i=1:5
