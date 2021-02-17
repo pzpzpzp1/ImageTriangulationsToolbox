@@ -1,4 +1,6 @@
-function ptc = linearRender(X, T, colors)
+function ptc = linearRender(mesh, colors)
+    X = mesh.X;
+    T = mesh.T;
     colorslin = uint8(reshape(colors,[],3));
     newX = X(reshape(T,[],1),:);
     newT = reshape(1:size(newX,1),[],3);

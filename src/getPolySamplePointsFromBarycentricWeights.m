@@ -1,6 +1,4 @@
-function samplePoints = getSamplePointsFromBarycentricWeights(ws, mesh)
-    X=mesh.X;
-    T=mesh.T;
+function samplePoints = getPolySamplePointsFromBarycentricWeights(ws, mesh)
     n = size(ws,1);
     
     % 3 x T x 2

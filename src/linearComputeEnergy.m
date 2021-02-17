@@ -4,7 +4,7 @@ function [extra, energy, colors, gradient] = linearComputeEnergy(img, mesh, n1D,
     X = mesh.X; T = mesh.T; nT = size(T,1);
     % generate sample locations in barycentric coords
     [ws, interiorInds] = getBarycentricSamplingWeights(n1D); 
-    samplePoints = getSamplePointsFromBarycentricWeights(ws, X, T);
+    samplePoints = getSamplePointsFromBarycentricWeights(ws, mesh);
     n = size(ws,1); 
     dA = mesh.triAreas/n; % differential unit of area
     

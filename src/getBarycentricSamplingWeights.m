@@ -1,7 +1,13 @@
 
-function [ws, interiorInds] = getBarycentricSamplingWeights(n)
-    assert(n >= 5);
-    persistent cachedWs cachedInteriorInds
+function [ws, interiorInds, tris] = getBarycentricSamplingWeights(n, layersdeep)
+    if nargin == 0
+        clear all; close all;
+        n=15;
+        layersdeep = 3;
+    end
+    
+    assert(n >= 2);
+    persistent cachedWs cachedInteriorInds cachedTris
     if isempty(cachedWs) || n > numel(cachedWs) || numel(cachedWs{n})==0
         % n would need to be 1e6 for this to become floating point imprecise.
         eps = 1e-6;
@@ -13,12 +19,26 @@ function [ws, interiorInds] = getBarycentricSamplingWeights(n)
         
         keep = find(W>=-eps);
         assert(numel(keep)==n*(n+1)/2); % another thresholding sanity check
-        cachedWs{n} = [U(keep) V(keep) W(keep)];
-        layersdeep = 3;
+        
+        [cachedWs{n}, perm] = sortrows([U(keep) V(keep) W(keep)]);
+        cachedWs{n}(abs(cachedWs{n}) < eps) = 0;
+        if ~exist('layersdeep','var'); layersdeep = 2; end;
         cachedInteriorInds{n} = ~any(abs(cachedWs{n}) < (layersdeep-1)/(n-1) + eps,2); % 1 layer interior
+        cachedInteriorInds{n}(abs(cachedInteriorInds{n}) < eps) = 0;
+        
+        % get triangulation
+        notkeep = W < -eps;
+        Linds = zeros(size(W)); Linds(:)=1:numel(Linds);
+        t1 = Linds(1:end-1,1:end-1); t2 = Linds(2:end,1:end-1); t3 = Linds(2:end,2:end); t4 = Linds(1:end-1,2:end);
+        fulltris = [t1(:) t2(:) t4(:); t4(:) t2(:) t3(:)];
+        fulltris(any(ismember(fulltris,Linds(notkeep)),2),:)=[]; % remove half of the triangles
+        inds = knnsearch(cachedWs{n},[U(:) V(:) W(:)]); % lazy re-indexing
+        fulltris = inds(fulltris);
+        cachedTris{n} = fulltris;
     end
     ws = cachedWs{n};
     interiorInds = cachedInteriorInds{n};
+    tris = cachedTris{n};
 end
 
  %% sanity check visualization

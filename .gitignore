@@ -4,3 +4,4 @@
 *.avi
 /results/compareCompression/*.jpg
 /results/compareCompression/*.txt
+*.pdf

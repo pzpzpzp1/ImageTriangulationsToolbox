@@ -1,4 +1,4 @@
-function f1 = render(img, mesh, colors, approx, grad, salmap)
+function f1 = render(img, mesh, extra, approx, grad, salmap, renderparams)
     %% set up figure such that closing it throws an error, 
     % but also you don't have to initialize a figure outside of this function
     persistent pfh;
@@ -16,7 +16,7 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     X = mesh.X; T = mesh.T;
     ax1 = subplot_er(1,2,1); set(gca, 'YDir','reverse');
     image(img); hold all; axis equal; axis off;
-    renderMeshEdges(mesh,[.5 .5]);
+    polyRenderMeshEdges(mesh,[.5 .5]);
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
     if numel(salmap)~=0 && norm(salmap-1,'fro')~=0
         boost = (salmap-1); imh = image(boost./max(boost(:))*256); imh.AlphaData = .3*boost/max(boost(:));
@@ -27,13 +27,17 @@ function f1 = render(img, mesh, colors, approx, grad, salmap)
     ax2 = subplot_er(1,2,2);
     hold all; axis equal; axis off;
     set(gca, 'YDir','reverse');
-    approx.render(X, T, colors);
+    approx.render(mesh, extra, renderparams);
 %     scatter(X(mesh.isXvert,1),X(mesh.isXvert,2),'r.');
 %     scatter(X(mesh.isYvert,1),X(mesh.isYvert,2),'b.');
     xlim([min(X(:,1)) max(X(:,1))]);
     ylim([min(X(:,2)) max(X(:,2))]);
     set(gca,'XTickLabel',{},'YTickLAbel',{},'Box','on')
-    if numel(grad)~=0; quiver(X(:,1), X(:,2), grad(:,1), grad(:,2),'c'); end;
+    if numel(grad)~=0; 
+        quiver(X(:,1), X(:,2), grad.Xgrad(:,1), grad.Xgrad(:,2),'r'); 
+        quiver(mesh.edgeX(:,1,:), mesh.edgeX(:,2,:), grad.edgeGrad(:,1,:), grad.edgeGrad(:,2,:),'b'); 
+        quiver(mesh.faceX(:,1,:), mesh.faceX(:,2,:), grad.faceGrad(:,1,:), grad.faceGrad(:,2,:),'g'); 
+    end;
         
     set(pfh,'Visible','on');
     hlink = linkprop([ax1,ax2],{'XLim','YLim','ZLim'}); 
