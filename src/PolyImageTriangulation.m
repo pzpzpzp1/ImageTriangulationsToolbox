@@ -161,6 +161,9 @@ end
 % display initial state
 approx = Approximator(polyparams, colstrat);
 [extra, energy0] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
+areaEnergy0 = polyGetAreaEnergy(mesh, integral1DNsamples, salmap);
+areafactor = energy0/areaEnergy0;
+
 renderparams0.renderWithInteriorColors = false;renderparams0.renderResolution = integral1DNsamples;renderparams0.integral1DNsamples = integral1DNsamples;
 
 
@@ -198,12 +201,12 @@ for i=1:maxIters
     energycomptimeStart = tic;
     %% compute new colors for updated mesh and display
     [extra, approxEnergy, grad] = approx.computeEnergy(img, mesh, integral1DNsamples, salmap);
-    %[areaEnergy, areaGradient] = getAreaEnergy(mesh, salmap);
-    %energy(i) = areaEnergy*areafactor + approxEnergy;
-    %totalGrad = areaGradient*areafactor + grad;
+    [areaEnergy, areaGradient] = polyGetAreaEnergy(mesh, integral1DNsamples, salmap, extra.mesh);
+    energy(i) = areaEnergy*areafactor + approxEnergy;
     
-    energy(i) = approxEnergy;
-    totalGrad = grad;
+    totalGrad.Xgrad = areaGradient.Xgrad*areafactor + grad.Xgrad;
+    totalGrad.edgeGrad = areaGradient.edgeGrad*areafactor + grad.edgeGrad;
+    totalGrad.faceGrad = areaGradient.faceGrad*areafactor + grad.faceGrad;
     
     gradnorms(i) = norm([totalGrad.faceGrad(:);totalGrad.edgeGrad(:);totalGrad.Xgrad(:)]);
     timedata.energycomptime(i) = toc(energycomptimeStart);

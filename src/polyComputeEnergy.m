@@ -17,8 +17,10 @@ function [extra, energy, grad] = polyComputeEnergy(img, mesh, integral1DNsamples
         
         %% get gradient w.r.t. corner vertices per triangle.
         eps = 5; % moves in unites of pixels
+        extra.mesh.eps = eps;
         flatXgrad = zeros(size(X0));
         perts = permute(reshape(eye(6)==1,3,2,6),[1 3 2]);
+        extra.mesh.vertperts = perts;
         for i=1:6
             pert = repmat(perts(:,i,:),1,nT,1);
             Xi = X0 + reshape(pert,[],2)*eps;
@@ -31,11 +33,14 @@ function [extra, energy, grad] = polyComputeEnergy(img, mesh, integral1DNsamples
             fdiffI = (extraI.perTriangleRGBError - extraIM.perTriangleRGBError)/(2*eps);
             
             flatXgrad(pert) = fdiffI;
+            extra.mesh.VertPlus(i) = meshI;
+            extra.mesh.VertMinus(i) = meshIM;
         end
         
         %% get gradient w.r.t. face vertices per triangle.
         flatFaceXgrad = zeros(size(FaceX0));
         perts = reshape(eye(nFC*d),d*nFC,d,nFC)==1;
+        extra.mesh.faceperts = perts;
         for i=1:d*nFC
             pert = perts(i,:,:);
             FaceXi = FaceX0 + pert*eps;
@@ -48,12 +53,15 @@ function [extra, energy, grad] = polyComputeEnergy(img, mesh, integral1DNsamples
             
             fdiffI = (extraI.perTriangleRGBError - extraIM.perTriangleRGBError)/(2*eps);
             flatFaceXgrad(repmat(pert,nT,1,1)) = fdiffI;
+            extra.mesh.FacePlus(i) = meshI;
+            extra.mesh.FaceMinus(i) = meshIM;
         end
         
         %% get gradient w.r.t. edge vertices per triangle.
         flatEdgeXgrad = zeros(size(EdgeX0));
         rsEdgeX0 = reshape(EdgeX0,3,nT,2,nEC);
         perts = permute(reshape(eye(3*nEC*d),3*d*nEC,3,d,nEC),[2 1 3 4]) == 1;
+        extra.mesh.edgeperts = perts;
         for i=1:3*d*nEC
             pert = perts(:,i,:,:);
             EdgeXi = reshape(rsEdgeX0 + pert*eps, 3*nT,d,nEC);
@@ -66,6 +74,9 @@ function [extra, energy, grad] = polyComputeEnergy(img, mesh, integral1DNsamples
             
             fdiffI = (extraI.perTriangleRGBError - extraIM.perTriangleRGBError)/(2*eps);
             flatEdgeXgrad(repmat(pert,1,nT,1,1)) = fdiffI;
+            
+            extra.mesh.EdgePlus(i) = meshI;
+            extra.mesh.EdgeMinus(i) = meshIM;
         end
         
         %% compile gradients together to form one aggregate gradient
