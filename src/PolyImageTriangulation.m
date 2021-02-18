@@ -48,7 +48,7 @@ function [X, T, colors, timedata] = PolyImageTriangulation(fname, ...
         forceGray = 0;
         maxIters = 500;
         saveOut = 0; outputDir = 'outputcache';
-        polyparams.gdeg = 1;
+        polyparams.gdeg = 2;
         polyparams.cdeg = 0; % best as 0 1 or 2.
         
         % OPTIMIZATION PARAMETERS
@@ -293,7 +293,7 @@ for i=1:maxIters
         end
     elseif dtstrat == DtStrategy.onepix
         
-        dt = 5/max(vecnorm(gradToflatGrad(totalGrad),2,2));
+        dt = 1/max(vecnorm(gradToflatGrad(totalGrad),2,2));
     elseif dtstrat == DtStrategy.none
         if i==1; warning('constant dt is VERY not recommended.'); end
     end

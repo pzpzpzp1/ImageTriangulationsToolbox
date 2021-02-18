@@ -33,7 +33,7 @@ function [ws, interiorInds, tris] = getBarycentricSamplingWeights(n, layersdeep)
         fulltris = [t1(:) t2(:) t4(:); t4(:) t2(:) t3(:)];
         fulltris(any(ismember(fulltris,Linds(notkeep)),2),:)=[]; % remove half of the triangles
         inds = knnsearch(cachedWs{n},[U(:) V(:) W(:)]); % lazy re-indexing
-        fulltris = inds(fulltris);
+        fulltris = reshape(inds(fulltris),size(fulltris));
         cachedTris{n} = fulltris;
     end
     ws = cachedWs{n};

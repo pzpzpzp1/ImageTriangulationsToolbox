@@ -42,13 +42,13 @@ function [queryEval, geometricGrad, geodets] = evalTri(bc_query, coeffs, monomia
     queryEval = reshape(evaluatedBasisFuncs*reshape(V,[],d*nC),nQ,d,nC);
     queryEval = permute(queryEval,[1 3 2]); % [nQ nC d]
     
-    % [nQ nM 3]                     [nM d nC] -> [nQ nC d 3]
-    diffQueryEval = permute(reshape(sum(evaluatedDerivBasisFuncs .* reshape(V,1,nM,1,d,nC),2),nQ,3,d,nC),[1 4 3 2]);
-    
     if d==2
+        % [nQ nM 3]                     [nM d nC] -> [nQ nC d 3]
+        diffQueryEval = permute(reshape(sum(evaluatedDerivBasisFuncs .* reshape(V,1,nM,1,d,nC),2),nQ,3,d,nC),[1 4 3 2]);
+        
         %[U, UGrad] = barycentricToRegularSimplex(bc_query);
         %[W, Wgrad] = RegularSimplexToBarycentric(U);
-    
+        
         Wgrad = [-1 -1; 1 0; 0 1];
         geometricGrad = reshape(sum(diffQueryEval .* reshape(Wgrad,1,1,1,3,d),4),nQ,nC,d,d);
 

@@ -6,7 +6,7 @@ function [extra, energy, colormaps] = polyComputeEnergyCore(img, mesh, integral1
     extra = {};
     X = mesh.X; T = mesh.T; nT = size(T,1); 
     % generate sample locations in barycentric coords
-    [ws, interiorInds, bcTris] = getBarycentricSamplingWeights(integral1DNsamples); n = size(ws,1); 
+    [ws, interiorInds] = getBarycentricSamplingWeights(integral1DNsamples); n = size(ws,1); 
     [samplePoints, ~, geodets] = mesh.triMaps(ws); % world space points, and jacobian det
     
     % perform sampling
