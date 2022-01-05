@@ -1,8 +1,8 @@
 close all; clear all;
 
 boostFactor = 10;
-initialHorizontalSamplings = [15 20 25];
-degrees = [0 1];
+initialHorizontalSamplings = [20 25 30];
+degrees = [0];
 maxIters = 500;
 saveOut = 1; 
 integral1DNsamples = 15;
@@ -12,12 +12,20 @@ Nedges2subdivide = 20;
 subdivmax = 10; 
 subdivisionDamper = 5;
 demandedEnergyDensityDrop = 5; windowSize = 20; 
-salstrats = [SaliencyStrategy.none, SaliencyStrategy.manual];
-        
+% salstrats = [SaliencyStrategy.none, SaliencyStrategy.manual];
+salstrats = [SaliencyStrategy.manual];
+whitelist = {'jinx','vi','silco','jinx2','jinx3'};
+whitelist = {'frog','frog'};
+% whitelist = {'blu','goldenfrog','graha'};
+
 foldername = 'images';
 files = dir([foldername '/*.jpg']);
 for i=1:numel(files)
     [~,name,ext] = fileparts(files(i).name);
+    if exist('whitelist','var') && ~any(strcmp(whitelist,name))
+        continue;
+    end
+    
     fname = [foldername '/' name ext];
     for j=1:numel(initialHorizontalSamplings)
         initialHorizontalSampling = initialHorizontalSamplings(j);
@@ -34,7 +42,7 @@ for i=1:numel(files)
                     OptStrategy.RMSProp, demandedEnergyDensityDrop, windowSize, ...
                     DtStrategy.constrained,...
                     integral1DNsamples,...
-                    integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, SubdivisionStrategy.edge ...
+                    integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, SubdivisionStrategy.edge, ...
                     initialMesh.hexagonal);
             end
         end

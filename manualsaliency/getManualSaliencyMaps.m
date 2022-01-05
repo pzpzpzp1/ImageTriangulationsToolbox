@@ -1,7 +1,15 @@
 files = dir('../images/*.jpg');
+whitelist = {'jinx','vi','silco','jinx2','jinx3'};
+whitelist = {'blu','goldenfrog','frog','graha'};
+whitelist = {'frog'};
 
 for i=1:numel(files)
     fname = files(i).name;
+    [~,name,ext] = fileparts(files(i).name);
+    if exist('whitelist','var') && ~any(strcmp(whitelist,name))
+        continue;
+    end
+    
     fullname = [files(i).folder '\' fname];
     img = imread(fullname);
     prevsal = [];

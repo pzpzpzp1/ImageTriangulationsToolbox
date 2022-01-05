@@ -1,9 +1,15 @@
 clear all; close all;
 files = dir('./../images/*.jpg');
+whitelist = {'jinx','vi','silco'};
 
 figure;
 params = defaultSaliencyParams;
 for i=1:numel(files)
+    [~,name,ext] = fileparts(files(i).name);
+    if exist('whitelist','var') && ~any(contains(whitelist,name))
+        continue;
+    end
+    
     img = initializeImage([files(i).folder '/' files(i).name]);
     
     salmap = makeSaliencyMap(img,params);

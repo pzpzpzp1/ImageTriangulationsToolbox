@@ -8,6 +8,7 @@ function [X, T, colors, timedata] = ImageTriangulation(fname, ...
         integral1DNsamplesSubdiv, edgeSplitResolution, Nedges2subdivide, subdivmax, subdivisionDamper, substrat, ...
         iMesh...
         )
+    stillcount = 0;
     timedata.energycomptime = [];
     timedata.nXs = [];
     timedata.nTs = [];
@@ -211,6 +212,9 @@ for i=1:maxIters
     %% check convergence and either subdivide or stop
     % if energy hasn't dropped significantly since window iterations ago, then energy is 'flat'
     if i > windowSize && energy(i-windowSize) - energy(i) < demandedEnergyDensityDrop*totalArea 
+        
+        savestill(X,T,degree,colors,approx,extra,sprintf('%sstill_%.2d.png',outpath,stillcount)); stillcount=stillcount+1;
+        
         if subdivcount <= subdivmax
             subdivtimestart = tic;
             %% handle bad sliver triangles
@@ -306,3 +310,16 @@ timedata.totalTime = toc(functionstarttime);
 
 end
 %[1 1 635.2000 219.2000]
+
+function savestill(X,T,degree,colors,approx,extra,outname)
+    tf = figure; set(gcf,'color','w');
+    hold all; axis equal; axis off; set(gca, 'YDir','reverse');
+    tcol = colors;
+    if degree == 0
+        tcol = extra.colorsAlt;
+    end
+    approx.render(X, T, extra.colorsAlt);
+    exportgraphics(tf, outname,'Resolution',300)
+    % exportgraphics(tf, 'output/jinx_init_15_deg_0_sal_1/still_00.pdf')
+    close(tf);
+end
